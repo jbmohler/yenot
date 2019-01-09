@@ -1,0 +1,8 @@
+syntax: glob
+
+*.swp
+*.egg-info
+.coverage
+.pytest_cache
+htmlcov
+__pycache__
