@@ -103,13 +103,9 @@ class Column:
         self.is_numeric = is_numeric
         self.sortnull = sortnull
         if sortkey == None:
-            if label.endswith('Rank') or self.sortnull == 'last':
-                # TODO: resolve design decision about null -- Pick Rank is an
-                # example where we want null to be "infinite"
-                sortkey = lambda x: ('c', '') if x == None else ('b', x)
-            else:
-                # null items sort high
-                sortkey = lambda x: ('a', '') if x == None else ('b', x)
+            nkey = 'c' if self.sortnull == 'last' else 'a'
+            # null items sort high
+            sortkey = lambda x: (nkey, '') if x == None else ('b', x)
         self.sortkey = sortkey
         if actions == None:
             # callable?, templated string, (global, represents)
@@ -170,7 +166,7 @@ def type_included(type_):
         return True
     elif type_ in ['text_color']:
         return False
-    elif '.' in type_ and type_.split('.', 1)[1] in ('autoid', 'surrogate'):
+    elif '.' in type_ and type_.split('.', 1)[1] == 'surrogate':
         return False
     return True
 
@@ -191,7 +187,7 @@ def parse_columns_full(column_list):
     column_list = copy.deepcopy(column_list)
     return [api_to_model(*x) for x in column_list]
 
-def convert_datetime(v):
+def parse_datetime(v):
     if v == None:
         return v
     try:
@@ -203,8 +199,6 @@ def convert_datetime(v):
     except ValueError:
         pass
     raise ValueError('could not parse {} as datetime'.format(v))
-
-parse_datetime = convert_datetime
 
 def parse_date(s):
     """
@@ -248,9 +242,9 @@ def as_python(columns, to_localtime=True):
         elif meta['type'] == 'datetime':
             if to_localtime and not meta.get('widget_kwargs', {}).get('localtime', False):
                 offset = (datetime.datetime.utcnow()-datetime.datetime.now()).total_seconds()/3600
-                return lambda v, offset=offset: convert_datetime(v)-datetime.timedelta(hours=offset) if v != None else v
+                return lambda v, offset=offset: parse_datetime(v)-datetime.timedelta(hours=offset) if v != None else v
             else:
-                return convert_datetime
+                return parse_datetime
         else:
             return identity
 

@@ -111,23 +111,33 @@ def test_server_info(dburl):
 
         client.get('api/sql/info')
 
-class ItemMixin:
-    def _rtlib_init_(self):
-        self.this_init = True
+def test_item_crud(dburl):
+    with yenot.tests.server_running(dburl) as server:
+        session = yclient.YenotSession(server.url)
+        client = session.std_client()
 
-    def fancy_label(self):
-        return 'Item : {}\nPrice: ${:.02f}'.format(self.name, self.price)
+        contents = client.get('api/test/item/new')
+        item = contents.main_table()
+        row = item.rows[0]
+        row.name = 'Sofa'
+        row.price = 4500
+        client.post('api/test/item', files={'item': item.as_http_post_file(exclusions=['id'])})
 
-    @property
-    def client_class(self):
-        if self.price > 1000:
-            return 'A'
-        elif self.price > 100:
-            return 'B'
-        elif self.price > 10:
-            return 'C'
-        else:
-            return 'D'
+        contents = client.get('api/test/items/list')
+        row = [row for row in contents.main_table().rows if row.name == 'Sofa'][0]
+        contents = client.get('api/test/item/{}/record', row.id)
+        assert contents.named_table('items').rows[0].revenue_level == 'B'
+        item = contents.main_table()
+        row = item.rows[0]
+        row.name = 'Sofa'
+        row.price = 450
+        client.put('api/test/item/{}', row.id, files={'item': item.as_http_post_file(exclusions=['id', 'revenue_level'])})
+        contents = client.get('api/test/item/{}/record', row.id)
+        assert contents.named_table('items').rows[0].revenue_level == 'C'
+
+        client.delete('api/test/item/{}', row.id)
+        contents = client.get('api/test/items/list')
+        assert len([row for row in contents.main_table().rows if row.name == 'Sofa']) == 0
 
 def test_read_write(dburl):
     with yenot.tests.server_running(dburl) as server:
@@ -135,24 +145,39 @@ def test_read_write(dburl):
         client = session.std_client()
 
         # do some reading and writing
-        client.post('api/test/item', name='Table', price=35)
+        client.post('api/test/item-simple', name='Table', price=35)
         try:
-            client.post('api/test/item', name='Table', price=35)
+            client.post('api/test/item-simple', name='Table', price=35)
         except Exception as e:
             assert str(e).find('duplicate key') > 0
         try:
-            client.post('api/test/item', name='Sofa')
+            client.post('api/test/item-simple', name='Sofa')
         except Exception as e:
             assert str(e).find('non-empty and valid') > 0
 
-        data = client.get('api/test/items/all')
-        items = data.main_table(mixin=ItemMixin)
-        assert items.rows[0].fancy_label().startswith('Item')
+        itable = rtlib.simple_table(['name', 'price'])
+        with itable.adding_row() as row:
+            row.name = 'Computer'
+            row.price = 30
+        client.post('api/test/item', files={'item': itable.as_http_post_file()})
 
-        client.put('api/test/update-item', 
+        data = client.get('api/test/items/list')
+        items = data.main_table()
+
+        for row in items.rows:
+            if row.name == 'Sofa':
+                row.price = 81
+
+        client.put('api/test/update-items', 
+                    files={'item': items.as_http_post_file(inclusions=['id', 'name', 'price'])})
+
+        for row in items.rows:
+            row.client_class = 'X'
+        client.put('api/test/update-item-extras', 
                     files={'item': items.as_http_post_file(inclusions=['name', 'price', 'client_class'])})
 
 if __name__ == '__main__':
     init_database(test_url(TEST_DATABASE))
     test_server_info(test_url(TEST_DATABASE))
+    test_item_crud(test_url(TEST_DATABASE))
     test_read_write(test_url(TEST_DATABASE))

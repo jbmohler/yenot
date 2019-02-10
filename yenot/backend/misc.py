@@ -1,15 +1,13 @@
 import json
-#import sitesql
+import collections
 import rtlib
 from bottle import request
 import psycopg2.extras as extras
-import psycopg2.extensions as psyext
 
 class UserError(Exception):
     def __init__(self, key, msg):
         super(UserError, self).__init__(msg)
         self.key = key
-
 
 def write_event_entry(conn, ltype, ldescr, ldata):
     ins = """
@@ -22,116 +20,85 @@ returning id, logtype, logtime;"""
         row = list(cursor.fetchall())[0]
     return row.id, row.logtype, row.logtime
 
-def sql_1row(conn, select, params=None):
+def tab2_columns_transform(columns, insert=None, remove=None, column_map=None):
     """
-    Note that this function is designed to be always used with tuple unpacking
-    for multiple columns and the single value is unpacked in the function.
-    Thus the function returns the actual single column value if a single column
-    and a tuple otherwise.  While this decision looks awkward at this level, it
-    is convenient on the outside.
-
-    >>> import sitesql
-    >>> conn = sitesql.rtx_sql_conn('test')
-    >>> one = sql_1row(conn, "select 1")
-    >>> one
-    1
-    >>> one, two = sql_1row(conn, "select 1, 2")
-    >>> one
-    1
-    >>> two
-    2
+    This function transforms a standard tab2 column list by inserting a
+    removing specified columns.
     """
-    # The presence of non-none params in the call to execute causes psycopg2
-    # interpolation.   This may or may not be desirable in general.
-    if params == None:
-        params = []
-    # use simple tuple cursor no matter what the connection cursor_factory is.
-    cursor = conn.cursor(cursor_factory=psyext.cursor)
 
-    cursor.execute(select, params)
-    results = list(cursor.fetchall())
-    if len(results) == 0:
-        row = (None,)*len(cursor.description)
-    elif len(results) == 1:
-        row = results[0]
+    if insert == None:
+        inserts = {}
     else:
-        raise RuntimeError('Multiple row result in sql_1row')
+        inserts = {x: y for x, *y in insert}
+    remove = [] if remove == None else remove
+    column_map = {} if column_map == None else column_map
 
-    cursor.close()
-    # This is moderately ugly semantic decision here.  If you don't like it,
-    # don't use this function :).
-    return row[0] if len(row) == 1 else row
+    # Make some sanity checks about inserts and removes.
+    assert len(set(inserts.keys()).intersection(remove)) == 0, 'insertion points cannot overlap with removals'
+    # TODO not sure if I want this next assert
+    assert len(set(remove).difference([c for c, _ in columns])) == 0, 'some removals do not exist'
+    assert len(set(inserts.keys()).difference([c for c, _ in columns])) == 0, 'insertion points not all found'
 
-def sql_void(conn, sql, params=None):
+    newcols = []
+    for attr, meta in columns:
+        if attr in remove:
+            continue
+        newcols.append((attr, meta))
+        if attr in inserts:
+            for a2 in inserts[attr]:
+                newcols.append((a2, column_map.get(a2, None)))
+    return newcols
+
+def tab2_rows_transform(colrows, columns_target, transform):
     """
-    Execute an SQL statement.  You must call `conn.commit()` after this
-    function for the change to be committed.
-    """
-    # The presence of non-none params in the call to execute causes psycopg2
-    # interpolation.   This may or may not be desirable in general.
-    if params == None:
-        params = []
-    with conn.cursor() as cursor:
-        cursor.execute(sql, params)
+    Follow up a call to :meth:`tab2_columns_transform` with this
+    function to iterate through the rows a standard tab2 table and
+    assign new columns.
 
-def sql_tab2(conn, stmt, mogrify_params=None, column_map=None):
+    :param colrows: initial tab2 2-tuple of columns & rows
+    :param columns_target: new column structure -- like a result of
+        :meth:`tab2_columns_transform`
+    :param transform: callable taking two parameters -- (oldrow, row);
+        this is called once per row in the `colrows` parameter.
     """
-    This convenience function executes an SQL statement and returns a standard
-    (columns, rows) tuple prepared to be returned from a Yenot REST end-point.
-    The column list is prepared from the SQL columns in the result set.  The
-    types are deduced from the SQL result types and the columns are refined by
-    the column_map.
+    source_attrs = [a for a, _ in colrows[0]]
+    target_attrs = [a for a, _ in columns_target]
+    overlap = set(source_attrs).intersection(target_attrs)
 
-    :param connection conn: a database connection object
-    :param str stmt: SQL statement to be executed (likely with placeholders for substitution)
-    :param dict/tuple mogrify_params: tuple or dictionary to substitute in stmt
-    :param dict column_map: a dictionary of column names to rtlib column declaration dictionaries
+    RecordType = rtlib.fixedrecord('RecordType', target_attrs)
+    RowType = collections.namedtuple('RowType', target_attrs)
+
+    rows = []
+    for oldrow in colrows[1]:
+        assign = {a: getattr(oldrow, a) for a in overlap}
+        row = RecordType(**assign)
+        transform(oldrow, row)
+        rows.append(RowType(**row._as_dict()))
+    return rows
+
+def tab2_rows_default(columns, indices, default):
     """
-    cursor = conn.cursor(cursor_factory=extras.NamedTupleCursor)
-    if mogrify_params != None:
-        cursor.execute(stmt, mogrify_params)
-    else:
-        cursor.execute(stmt)
-    columns, rows = _sql_tab2_cursor(cursor, column_map)
-    cursor.close()
-    return columns, rows
+    This is similar to :meth:`tab2_rows_transform`, but this function is
+    used to construct brand new rows from a column structure and some
+    indices (which have arbitrary structure -- or none at all).
 
-def _sql_tab2_cursor(cursor, column_map=None):
+    :param columns: column structure in standard tab2 table format
+    :param indices: list of identifiers or indices to the rows to construct
+    :param transform: callable taking two parameters -- (index, row);
+        this is called once per element of the `indices` parameter
     """
-    This function returns the rows from the (presumably psycopg2) cursor in the
-    format expected by Yenot clients.  Briefly, this format is a 2-tuple with
-    the first element a list of columns and the second element a list of rows
-    with values (no attribute names).  The index of the column in the first
-    element maps to the index of the value in each row.
-    """
-    if column_map == None:
-        column_map = {}
+    target_attrs = [a for a, _ in columns]
+    RecordType = rtlib.fixedrecord('RecordType', target_attrs)
+    RowType = collections.namedtuple('RowType', target_attrs)
 
-    rows = cursor.fetchall()
-    columns = []
-    for pgcol in cursor.description:
-        rt = column_map.get(pgcol[0], {})
-        pgtype = pgcol.type_code
-        if 'type' not in rt:
-            if pgtype in psyext.DATE.values:
-                rt['type'] = 'date'
-            elif pgtype in psyext.TIME.values+psyext.PYDATETIME.values:
-                # Uncertain if this also contains a time-only value
-                rt['type'] = 'datetime'
-            elif pgtype in psyext.INTEGER.values+psyext.LONGINTEGER.values:
-                rt['type'] = 'integer'
-            elif pgtype in psyext.FLOAT.values+psyext.DECIMAL.values:
-                rt['type'] = 'numeric'
-            elif pgtype in psyext.BOOLEAN.values:
-                rt['type'] = 'boolean'
-        if pgtype in psyext.UNICODE.values and pgcol.internal_size > 0:
-            rt['max_length'] = pgcol.internal_size
-        columns.append((pgcol[0], rt))
-    return (columns, rows)
-
+    rows = []
+    for index in indices:
+        row = RecordType()
+        default(index, row)
+        rows.append(RowType(**row._as_dict()))
+    return rows
 
 ###### rtlib SERVER incoming UTILS ####
-
 
 def table_from_tab2(name, required=None, amendments=None, options=None, allow_extra=False):
     try:

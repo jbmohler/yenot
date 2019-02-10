@@ -1,10 +1,13 @@
 from bottle import request, response
 import rtlib
+from . import sqlread
+from . import sqlwrite
 from . import misc
 
-sql_tab2 = misc.sql_tab2
-sql_1row = misc.sql_1row
-sql_void = misc.sql_void
+sql_tab2 = sqlread.sql_tab2
+sql_1row = sqlread.sql_1row
+sql_void = sqlread.sql_void
+writeblock = sqlwrite.writeblock
 UserError = misc.UserError
 table_from_tab2 = misc.table_from_tab2
 
@@ -12,6 +15,14 @@ parse_date = rtlib.parse_date
 parse_bool = rtlib.parse_bool
 parse_int = lambda x: int(x) if x != None else None
 parse_float = lambda x: float(x) if x != None else None
+
+tab2_columns_transform = misc.tab2_columns_transform
+tab2_rows_transform = misc.tab2_rows_transform
+tab2_rows_default = misc.tab2_rows_default
+
+sanitize_prefix = sqlread.sanitize_prefix
+sanitize_fts = sqlread.sanitize_fts
+sanitize_fragment = sqlread.sanitize_fragment
 
 def get_global_app():
     from . import plugins
@@ -106,3 +117,62 @@ class Results:
         response.content_type = 'application/json; charset=UTF-8'
         pyobj = self.plain_old_python()
         return rtlib.serialize(pyobj).encode('utf-8')
+
+class ColumnGenerator:
+    """
+    Attributes on this class (exposed as api.cgen) are callables which return a
+    dictionary.  The name of the attribute is returned as the 'type' element of
+    the returned dictionary.  Refer to documentation on the fido reports class
+    column map for a more complete understanding.
+
+    >>> cgen.auto(label='Skunk')
+    {'label': 'Skunk'}
+    >>> cgen.rtlib_type()
+    {'type': 'rtlib_type'}
+    >>> cgen.type.subtype.subsub()
+    {'type': 'type.subtype.subsub'}
+    >>> cgen.auto(unlikely='this is parameter never used, but it just takes it')
+    {'unlikely': 'this is parameter never used, but it just takes it'}
+
+    Observe that this classes pseudo-functions don't do any validation on the
+    names whatsoever.  Common keyword arguments are (as supported by rtlib):
+
+    - label (frequently omitted since the attribute names are automatically
+      title cased on the client if label is omitted.)
+    - url_key (sibling attribute name of surrogate primary key)
+    - hidden (boolean indicating default the column to hidden -- note that
+      an autoid subtype is sufficient to mark it hidden)
+    - alignment (likely 'right')
+
+    See :class:`PromptList` for additional options making sense in that context.
+    """
+    def __init__(self, prefix=None):
+        self.prefix = prefix
+
+    def __getattr__(self, attr):
+        if self.prefix == None:
+            return ColumnGenerator(attr)
+        else:
+            return ColumnGenerator(prefix='{}.{}'.format(self.prefix, attr))
+
+    def auto(self, **kwargs):
+        """
+        This special member does not add a type to the returned dictionary.
+        """
+        return kwargs.copy()
+
+    def __call__(self, **kwargs):
+        x = kwargs.copy()
+        x['type'] = self.prefix
+        return x
+
+cgen = ColumnGenerator()
+
+def ColumnMap(**kwargs):
+    """
+    See :class:`ColumnGenerator` for more details.  This function returns a
+    dictionary to pass to :func:`sql_tab2`.
+
+    This is nothing but syntactic sugar for a dictionary.
+    """
+    return kwargs
