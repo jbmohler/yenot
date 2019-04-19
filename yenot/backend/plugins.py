@@ -1,3 +1,4 @@
+import os
 import sys
 import re
 import json
@@ -54,6 +55,8 @@ def create_pool(dburl):
     dbname = result.path[1:]
 
     kwargs = {'dbname': result.path[1:]}
+    if result.hostname not in [None, '']:
+        kwargs['host'] = result.hostname
     if result.port != None:
         kwargs['port'] = result.port
     if result.username != None:
@@ -116,7 +119,10 @@ def init_application(dburl):
 
     # hook up the basic stuff
     import yenot.server
-    app._paste_server = PasteServer(host='127.0.0.1', port=8080)
+    port = 8080
+    if 'YENOT_PORT' in os.environ:
+        port = int(os.environ['YENOT_PORT'])
+    app._paste_server = PasteServer(host='127.0.0.1', port=port)
 
     return app
 

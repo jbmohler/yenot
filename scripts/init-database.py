@@ -11,21 +11,9 @@ import psycopg2.sql
 class InitError(Exception):
     pass
 
-def drop_db(dburl):
+def admin_connection(dburl):
     result = urllib.parse.urlsplit(dburl)
-    # on a journey here, but the point is that the dbname should be from the URL
-    dbname = result.path[1:]
-    if result.password != None:
-        # current user based auth won't have an embedded password
-        os.environ['PGPASSWORD'] = result.password
-    if result.username != None:
-        os.system('dropdb -U {} {}'.format(result.username, dbname))
-    else:
-        os.system('dropdb {}'.format(dbname))
-
-def test_and_create_db(dburl):
-    result = urllib.parse.urlsplit(dburl)
-    if result.scheme != 'postgresql':
+    if result.scheme not in ('postgresql', 'postgres'):
         raise InitError('only postgresql is supported as a backend database')
     if result.path[0] != '/':
         raise InitError('no path found')
@@ -34,6 +22,8 @@ def test_and_create_db(dburl):
         raise InitError('cannot overwrite system table postgres')
 
     admin_kwargs = {'dbname': 'postgres'}
+    if result.hostname not in [None, '']:
+        admin_kwargs['host'] = result.hostname
     if result.port != None:
         admin_kwargs['port'] = result.port
     if result.username != None:
@@ -44,6 +34,25 @@ def test_and_create_db(dburl):
 
     conn_admin = psycopg2.connect(**admin_kwargs)
     conn_admin.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+    return conn_admin
+
+def drop_db(dburl):
+    result = urllib.parse.urlsplit(dburl)
+    dbname = result.path[1:]
+
+    conn_admin = admin_connection(dburl)
+    try:
+        with conn_admin.cursor() as c:
+            c.execute(psycopg2.sql.SQL('drop database {}').format(psycopg2.sql.Identifier(dbname)))
+    except Exception as e:
+        print(e)
+    conn_admin.close()
+
+def test_and_create_db(dburl):
+    result = urllib.parse.urlsplit(dburl)
+    dbname = result.path[1:]
+
+    conn_admin = admin_connection(dburl)
 
     with conn_admin.cursor() as c:
         c.execute("select datname from pg_database")
@@ -66,6 +75,8 @@ def create_connection(dburl):
     dbname = result.path[1:]
 
     kwargs = {'dbname': result.path[1:]}
+    if result.hostname != None:
+        kwargs['host'] = result.hostname
     if result.port != None:
         kwargs['port'] = result.port
     if result.username != None:

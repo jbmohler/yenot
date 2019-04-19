@@ -20,7 +20,10 @@ def server_running(dburl, modules=None):
                 [dburl]
     p = subprocess.Popen(args, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
 
-    url = 'http://127.0.0.1:8080'
+    port = 8080
+    if 'YENOT_PORT' in os.environ:
+        port = int(os.environ['YENOT_PORT'])
+    url = 'http://127.0.0.1:{}'.format(port)
 
     while True:
         try:

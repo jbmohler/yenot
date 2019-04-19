@@ -9,7 +9,10 @@ import yenot.tests
 TEST_DATABASE = 'yenot_e2e_test'
 
 def test_url(dbname):
-    return 'postgresql://localhost/{}'.format(dbname)
+    if 'YENOT_DB_URL' in os.environ:
+        return os.environ['YENOT_DB_URL']
+    # Fall back to local unix socket.  This is the url for unix domain socket.
+    return 'postgresql:///{}'.format(dbname)
 
 def init_database(dburl):
     r = os.system('{} ./scripts/init-database.py {} --full-recreate --ddl-script=#yenotroot#/tests/item.sql --user=admin'.format(sys.executable, dburl))
