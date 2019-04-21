@@ -17,6 +17,9 @@ if __name__ == '__main__':
 
     for m in args.module:
         importlib.import_module(m)
+    import yenot.backend.api as api
+    for func in api.app_init_functions:
+        func(app)
 
     # debugging & development service
     app.run(debug=True, reloader=False, server=app._paste_server)

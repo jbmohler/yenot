@@ -4,6 +4,7 @@ import importlib
 import urllib.parse
 import psycopg2
 import psycopg2.extensions
+import psycopg2.errors
 import psycopg2.extras
 import psycopg2.sql
 
@@ -43,8 +44,11 @@ def drop_db(dburl):
     try:
         with conn_admin.cursor() as c:
             c.execute(psycopg2.sql.SQL('drop database {}').format(psycopg2.sql.Identifier(dbname)))
+    except psycopg2.errors.InvalidCatalogName:
+        # no database here to delete
+        pass
     except Exception as e:
-        print(e)
+        print('Unexpected error removing database:  ', e)
     conn_admin.close()
 
 def test_and_create_db(dburl):
@@ -57,7 +61,7 @@ def test_and_create_db(dburl):
         c.execute("select datname from pg_database")
         dbnames = [row.datname for row in c.fetchall()]
         if dbname in dbnames:
-            raise InitError('database {} already exists'.format(dbname))
+            raise InitError('database {} already exists (consider --full-recreate)'.format(dbname))
 
     with conn_admin.cursor() as c:
         c.execute("select version()")
@@ -103,11 +107,10 @@ def create_schema(conn, ddlfiles):
                 c.execute(sql)
                 conn.commit()
         except Exception as e:
-            print('Error loading {} -- {}'.format(ddl, str(e)))
-            sys.exit(1)
+            raise InitError('Error loading {} -- {}'.format(ddl, str(e)))
 
 if __name__ == '__main__':
-    parse = argparse.ArgumentParser('initialize a pyhacc database')
+    parse = argparse.ArgumentParser('initialize a yenot database')
     parse.add_argument('dburl', 
             help='database identifier in url form (e.g. postgresql://user@host/dbname)')
     parse.add_argument('--full-recreate', default=False, action='store_true', 

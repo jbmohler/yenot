@@ -28,12 +28,12 @@ def get_global_app():
     from . import plugins
     return plugins.global_app
 
-APP_INIT_FUNC = []
+app_init_functions = []
 data_init_functions = []
 
 def add_server_init(ff):
-    global APP_INIT_FUNC
-    APP_INIT_FUNC.append(ff)
+    global app_init_functions
+    app_init_functions.append(ff)
 
 def add_data_init(ff):
     global data_init_functions
