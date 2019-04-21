@@ -13,6 +13,7 @@ import psycopg2.extras
 import psycopg2.pool
 import bottle
 from bottle import request, response
+import rtlib
 from . import misc
 
 # to become a method of app
@@ -67,6 +68,11 @@ def create_pool(dburl):
 
     return psycopg2.pool.ThreadedConnectionPool(4, 16, **kwargs)
 
+def endpoints(self):
+    kls_endpoint = rtlib.fixedrecord('Endpoint', ['method', 'url', 'name'])
+    destinations = [r for r in self.routes]
+    return [kls_endpoint(r.method, r.rule[1:], r.name) for r in destinations if r.rule[1:] != '']
+
 def delayed_shutdown(self):
     def make_it_stop():
         time.sleep(.3)
@@ -81,7 +87,6 @@ class DerivedBottle(bottle.Bottle):
     pass
 
 # resume imports
-import bottle
 from paste import httpserver
 from paste.translogger import TransLogger
 
@@ -107,6 +112,7 @@ def init_application(dburl):
     DerivedBottle.unregister_connection = unregister_connection
     DerivedBottle.cancel_request = cancel_request
     DerivedBottle.delayed_shutdown = delayed_shutdown
+    DerivedBottle.endpoints = endpoints
 
     app = DerivedBottle()
     global_app = app
@@ -127,7 +133,7 @@ def init_application(dburl):
     return app
 
 class RequestCancelTracker:
-    name = 'cancel'
+    name = 'yenot-cancel'
     api = 2
 
     def setup(self, app):
@@ -140,7 +146,7 @@ class RequestCancelTracker:
         return wrapper
 
 class ExceptionTrapper:
-    name = 'yenotexceptions'
+    name = 'yenot-exceptions'
     api = 2
 
     def setup(self, app):

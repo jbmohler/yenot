@@ -3,7 +3,7 @@ import yenot.backend.api as api
 
 app = api.get_global_app()
 
-@app.get('/api/ping', name='ping', skip=['yenotauth'])
+@app.get('/api/ping', name='ping', skip=['yenot-auth'])
 def ping():
     return '.'
 

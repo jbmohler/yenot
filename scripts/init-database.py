@@ -1,7 +1,6 @@
 import os
 import argparse
-import getpass
-import bcrypt
+import importlib
 import urllib.parse
 import psycopg2
 import psycopg2.extensions
@@ -109,13 +108,18 @@ def create_schema(conn, ddlfiles):
 
 if __name__ == '__main__':
     parse = argparse.ArgumentParser('initialize a pyhacc database')
-    parse.add_argument('dburl', help='database identifier in url form (e.g. postgresql://user@host/dbname)')
+    parse.add_argument('dburl', 
+            help='database identifier in url form (e.g. postgresql://user@host/dbname)')
     parse.add_argument('--full-recreate', default=False, action='store_true', 
             help='drop and recreate the database')
     parse.add_argument('--ddl-script', 
             action='append', default=[],
             help='extra sql ddl initialization scripts')
-    parse.add_argument('--user', default=None, help='administrative user name (no user created if not supplied)')
+    parse.add_argument('--module', 
+            action='append', default=[],
+            help='specify module to import before starting yenot server')
+    parse.add_argument('--user', default=None, 
+            help='administrative user name (no user created if not supplied)')
 
     args = parse.parse_args()
 
@@ -124,10 +128,14 @@ if __name__ == '__main__':
     test_and_create_db(args.dburl)
     with create_connection(args.dburl) as conn:
         create_schema(conn, args.ddl_script)
-        #load_essentials(conn)
-        #if args.user != None:
-        #    if os.environ.get('INIT_DB_PASSWD', None) != None:
-        #        pw = os.environ['INIT_DB_PASSWD']
-        #    else:
-        #        pw = getpass.getpass('Password for {}: '.format(args.user))
-        #    create_pyhacc_user(conn, args.user, pw)
+
+        import yenot.backend
+        app = yenot.backend.init_application(args.dburl)
+
+        import yenot.server
+        for m in args.module:
+            importlib.import_module(m)
+
+        import yenot.backend.api as api
+        for func in api.data_init_functions:
+            func(conn, args)
