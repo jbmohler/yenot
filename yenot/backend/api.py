@@ -6,6 +6,7 @@ from . import misc
 
 sql_tab2 = sqlread.sql_tab2
 sql_1row = sqlread.sql_1row
+sql_rows = sqlread.sql_rows
 sql_void = sqlread.sql_void
 writeblock = sqlwrite.writeblock
 UserError = misc.UserError
