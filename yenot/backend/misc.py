@@ -102,7 +102,7 @@ def tab2_rows_default(columns, indices, default):
 
 def table_from_tab2(name, required=None, amendments=None, options=None, allow_extra=False):
     try:
-        return RecordCollection.from_file(request.files[name].file, \
+        return InboundTable.from_file(request.files[name].file, \
                         encoding='utf8', \
                         required=required, \
                         amendments=amendments, \
@@ -111,7 +111,11 @@ def table_from_tab2(name, required=None, amendments=None, options=None, allow_ex
     except RuntimeError as e:
         raise UserError('invalid-collection', 'Post file "{}" contains incorrect data.  {}'.format(name, str(e)))
 
-class RecordCollection(rtlib.TypedTable):
+class InboundTable:
+    def __init__(self, columns, rows):
+        self.rows = rows[:]
+        self.columns = columns
+
     @classmethod
     def from_file(cls, file, encoding='utf8', 
                         required=None, amendments=None, options=None, allow_extra=False):

@@ -8,26 +8,6 @@ def simple_table(columns, column_map=None):
         column_map = {}
     return ClientTable([(c, column_map.get(c, None)) for c in columns], [])
 
-class TypedTable:
-    """
-    This class and ClientTable present the same html generating API.
-    """
-
-    def __init__(self, columns, rows):
-        self.rows = rows[:]
-        self.columns = columns
-
-    def as_tab2(self, column_map=None):
-        """
-        This function is serializing function somewhat like as_http_post_file.
-        Perhaps they should be more related.
-        """
-        # TODO: return meta constructed from columns?
-        if column_map == None:
-            column_map = {}
-        columns = [(c, column_map.get(c, None)) for c in self.DataRow.__slots__]
-        rows = [r._as_tuple() for r in self.rows]
-        return columns, rows
 
 class ClientTable:
     """
@@ -119,10 +99,17 @@ class ClientTable:
         tab3 = self.as_writable(*args, **kwargs)
         return serialization.to_json(tab3)
 
-    def as_tab2(self):
-        x = TypedTable(self.columns, self.rows)
-        x.DataRow = self.DataRow
-        return x.as_tab2()
+    def as_tab2(self, column_map=None):
+        """
+        This function is serializing function somewhat like as_http_post_file.
+        Perhaps they should be more related.
+        """
+        # TODO: return meta constructed from columns?
+        if column_map == None:
+            column_map = {}
+        columns = [(c, column_map.get(c, None)) for c in self.DataRow.__slots__]
+        rows = [r._as_tuple() for r in self.rows]
+        return columns, rows
 
 
 class UnparsingClientTable(ClientTable):
