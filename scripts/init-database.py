@@ -7,6 +7,7 @@ import psycopg2.extensions
 import psycopg2.errors
 import psycopg2.extras
 import psycopg2.sql
+import yenot.backend
 
 class InitError(Exception):
     pass
@@ -72,24 +73,6 @@ def test_and_create_db(dburl):
         c.execute(psycopg2.sql.SQL('create database {}').format(psycopg2.sql.Identifier(dbname)))
     conn_admin.close()
 
-def create_connection(dburl):
-    result = urllib.parse.urlsplit(dburl)
-
-    dbname = result.path[1:]
-
-    kwargs = {'dbname': result.path[1:]}
-    if result.hostname != None:
-        kwargs['host'] = result.hostname
-    if result.port != None:
-        kwargs['port'] = result.port
-    if result.username != None:
-        kwargs['user'] = result.username
-    if result.password != None:
-        kwargs['password'] = result.password
-    kwargs['cursor_factory'] = psycopg2.extras.NamedTupleCursor
-
-    return psycopg2.connect(**kwargs)
-
 def create_schema(conn, ddlfiles):
     rootdir = os.path.normpath(__file__)
     rootdir = os.path.dirname(rootdir)
@@ -129,7 +112,7 @@ if __name__ == '__main__':
     if args.full_recreate:
         drop_db(args.dburl)
     test_and_create_db(args.dburl)
-    with create_connection(args.dburl) as conn:
+    with yenot.backend.create_connection(args.dburl) as conn:
         create_schema(conn, args.ddl_script)
 
         import yenot.backend

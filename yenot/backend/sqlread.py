@@ -20,17 +20,6 @@ def sql_1row(conn, select, params=None):
     Thus the function returns the actual single column value if a single column
     and a tuple otherwise.  While this decision looks awkward at this level, it
     is convenient on the outside.
-
-    >>> import sitesql
-    >>> conn = sitesql.rtx_sql_conn('test')
-    >>> one = sql_1row(conn, "select 1")
-    >>> one
-    1
-    >>> one, two = sql_1row(conn, "select 1, 2")
-    >>> one
-    1
-    >>> two
-    2
     """
     # The presence of non-none params in the call to execute causes psycopg2
     # interpolation.   This may or may not be desirable in general.
@@ -52,6 +41,29 @@ def sql_1row(conn, select, params=None):
     # This is moderately ugly semantic decision here.  If you don't like it,
     # don't use this function :).
     return row[0] if len(row) == 1 else row
+
+def sql_1object(conn, select, params=None):
+    """
+    Similarly to :meth:`sql_1row` this function executes an SQL select that is
+    expected to return exactly one row.   It returns an object whose
+    members are the row attributes named accordingly.
+    """
+    # The presence of non-none params in the call to execute causes psycopg2
+    # interpolation.   This may or may not be desirable in general.
+    if params == None:
+        params = []
+
+    with conn.cursor(cursor_factory=extras.NamedTupleCursor) as cursor:
+        cursor.execute(select, params)
+        results = list(cursor.fetchall())
+        if len(results) == 0:
+            row = None
+        elif len(results) == 1:
+            row = results[0]
+        else:
+            raise RuntimeError('Multiple row result in sql_1row')
+
+    return row
 
 def sql_void(conn, sql, params=None):
     """
@@ -121,9 +133,21 @@ def _sql_tab2_cursor(cursor, column_map=None):
     return (columns, rows)
 
 def sanitize_fragment(text):
+    """
+    >>> sanitize_fragment('asdf')
+    '%asdf%'
+    >>> sanitize_fragment('a%a')
+    '%a%%a%'
+    """
     return '%{}%'.format(text.replace('%', '%%'))
 
 def sanitize_prefix(text):
+    """
+    >>> sanitize_prefix('asdf')
+    'asdf%'
+    >>> sanitize_prefix('a%a')
+    'a%%a%'
+    """
     return '{}%'.format(text.replace('%', '%%'))
 
 # See http://blog.lostpropertyhq.com/postgres-full-text-search-is-good-enough/

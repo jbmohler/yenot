@@ -20,7 +20,11 @@ else
 fi
 
 COVERAGE_PROCESS_START=.coveragerc pytest tests
+COVERAGE_PROCESS_START=.coveragerc python -m doctest yenot/backend/sqlread.py
 COVERAGE_PROCESS_START=.coveragerc python tests/end-to-end.py
 coverage combine
-coverage html
-xdg-open htmlcov/index.html &>/dev/null
+coverage report
+if [ ]; then 
+	coverage html
+	xdg-open htmlcov/index.html &>/dev/null
+fi

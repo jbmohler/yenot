@@ -50,6 +50,24 @@ def cancel_request(self, cancel_token):
     else:
         raise misc.UserError('invalid-param', 'This is not a recognized request or not capable of being canceled.')
 
+def create_connection(dburl):
+    result = urllib.parse.urlsplit(dburl)
+
+    dbname = result.path[1:]
+
+    kwargs = {'dbname': result.path[1:]}
+    if result.hostname != None:
+        kwargs['host'] = result.hostname
+    if result.port != None:
+        kwargs['port'] = result.port
+    if result.username != None:
+        kwargs['user'] = result.username
+    if result.password != None:
+        kwargs['password'] = result.password
+    kwargs['cursor_factory'] = psycopg2.extras.NamedTupleCursor
+
+    return psycopg2.connect(**kwargs)
+
 def create_pool(dburl):
     result = urllib.parse.urlsplit(dburl)
 
