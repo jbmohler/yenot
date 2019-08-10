@@ -123,5 +123,7 @@ if __name__ == '__main__':
             importlib.import_module(m)
 
         import yenot.backend.api as api
+        for func in api.app_init_functions:
+            func(app)
         for func in api.data_init_functions:
             func(conn, args)

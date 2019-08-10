@@ -189,3 +189,46 @@ def ColumnMap(**kwargs):
     This is nothing but syntactic sugar for a dictionary.
     """
     return kwargs
+
+def PromptList(__order__, **kwargs):
+    """
+    This function returns a prompt list for a report in the order specified.
+    It constructs a list of 2-tuples (attr, definition) describing the prompts
+    in a JSON friendly structure.
+
+    Use this in functions referred to by report_prompts in the route mapping.
+
+    >>> PromptList(p1=cgen.date(), p2=cgen.integer(), __order__=['p1', 'p2'])
+    [('p1', {'type': 'date'}), ('p2', {'type': 'integer'})]
+    >>> PromptList(p1=cgen.auto(label='Fred'), __order__=['p1'])
+    [('p1', {'label': 'Fred'})]
+    >>> PromptList(p1=cgen.auto(default=3), __order__=['p1'])
+    [('p1', {'default': 3})]
+
+    In addition to the options summarily described in
+    :class:`ColumnGenerator` the following options also
+    make sense here.
+
+    - default (type matching the pseudo-functions)
+
+      The default value to load the control with when the options are
+      first presented.
+
+    - optional (boolean)
+
+      If true, the client UI offsets this parameter in a filter box
+      (possible future implementations include suppressing the prompt
+      altogether until an advanced button enables the selection).
+
+    - relevance (a 3 tuple of sibling-prompt-name, relation, magic-value)
+
+      If present, the controls of this and the indicated sibling prompt
+      are arranged in the GUI depending on the 'relation'.   For
+      instance, if the relation is 'relevant-if-not' then the control of
+      the sibling is put first and this control may be disabled for the
+      given value.
+    """
+    x1 = [(attr, kwargs.pop(attr, None)) for attr in __order__]
+    if len(kwargs) > 0:
+        x1 += list(kwargs.items())
+    return x1

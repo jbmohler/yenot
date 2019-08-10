@@ -30,23 +30,28 @@ class YenotSession(requests.Session):
     def json_client(self):
         return YenotClient(self, json.loads)
 
-def exception_string(request, method):
-    if request.status_code == 401:
-        return 'The request to {} is not authorized.'.format(request.url)
+
+def exception_string(response, method):
+    if response.status_code == 401:
+        return 'The request to {} is not authorized.'.format(response.url)
     return """\
 Server request failed with status code:  {0.status_code}
 URL:  {0.url}
-Method:  {1}""".format(request, method)
+Method:  {1}""".format(response, method)
 
-def raise_exception_ex(request, method):
-    if request.status_code == 403:
-        t = request.text
+def raise_exception_ex(response, method):
+    if response.status_code == 403:
+        t = response.text
         is_json = len(t) > 0 and t[0] == '[' and t[-1] == ']'
         if is_json:
-            keys = json.loads(request.text)[0]
+            keys = json.loads(response.text)[0]
             if 'error-msg' in keys:
-                raise YenotError(keys['error-msg'])
-    raise YenotServerError(exception_string(request, method))
+                exc = YenotError(keys['error-msg'])
+                exc.status_code = response.status_code
+                raise exc
+    exc = YenotServerError(exception_string(response, method))
+    exc.status_code = response.status_code
+    raise exc
 
 
 class StdPayload:

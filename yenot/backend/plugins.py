@@ -86,11 +86,6 @@ def create_pool(dburl):
 
     return psycopg2.pool.ThreadedConnectionPool(4, 16, **kwargs)
 
-def endpoints(self):
-    kls_endpoint = rtlib.fixedrecord('Endpoint', ['method', 'url', 'name'])
-    destinations = [r for r in self.routes]
-    return [kls_endpoint(r.method, r.rule[1:], r.name) for r in destinations if r.rule[1:] != '']
-
 def delayed_shutdown(self):
     def make_it_stop():
         time.sleep(.3)
@@ -130,7 +125,6 @@ def init_application(dburl):
     DerivedBottle.unregister_connection = unregister_connection
     DerivedBottle.cancel_request = cancel_request
     DerivedBottle.delayed_shutdown = delayed_shutdown
-    DerivedBottle.endpoints = endpoints
 
     app = DerivedBottle()
     global_app = app
@@ -239,6 +233,8 @@ class ExceptionTrapper:
                 response.status = 403
                 response.content_type = 'application/json; charset=UTF-8'
                 return json.dumps([keys])
+            except bottle.HTTPError:
+                raise
             except Exception as e:
                 if bottle.DEBUG:
                     traceback.print_exc()
