@@ -57,10 +57,10 @@ select 'Joel'::varchar(30) as name,
     with app.dbconn() as conn:
         rawdata = api.sql_tab2(conn, select)
 
-        table = rtlib.UnparsingClientTable(*rawdata)
-        for row in table.rows:
+        def xform_add_one(oldrow, row):
             row.age += 1
+        rows = api.tab2_rows_transform(rawdata, rawdata[0], xform_add_one)
 
-        results.tables['data'] = table.as_tab2()
+        results.tables['data'] = rawdata[0], rows
 
     return results.json_out()
