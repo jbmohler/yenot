@@ -55,6 +55,8 @@ class Results:
         self.keys = {'headers': []}
         self._main_name = None
         self._t = {}
+        if default_title:
+            self.key_labels += get_global_app().request_content_title()
 
     @property
     def key_labels(self):

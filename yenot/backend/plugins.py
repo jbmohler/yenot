@@ -13,7 +13,6 @@ import psycopg2.extras
 import psycopg2.pool
 import bottle
 from bottle import request, response
-import rtlib
 from . import misc
 
 # to become a method of app
@@ -94,6 +93,10 @@ def delayed_shutdown(self):
     self.stop_thread = threading.Thread(target=make_it_stop)
     self.stop_thread.start()
 
+def request_content_title(self):
+    return request.route.name
+
+
 global_app = None
 
 class DerivedBottle(bottle.Bottle):
@@ -125,6 +128,7 @@ def init_application(dburl):
     DerivedBottle.unregister_connection = unregister_connection
     DerivedBottle.cancel_request = cancel_request
     DerivedBottle.delayed_shutdown = delayed_shutdown
+    DerivedBottle.request_content_title = request_content_title
 
     app = DerivedBottle()
     global_app = app
