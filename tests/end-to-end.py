@@ -138,6 +138,8 @@ def test_item_crud(dburl):
         contents = client.get('api/test/item/{}/record', row.id)
         assert contents.named_table('items').rows[0].revenue_level == 'C'
 
+        contents = client.get('api/test/items/list')
+        assert len([row for row in contents.main_table().rows if row.name == 'Sofa']) == 1
         client.delete('api/test/item/{}', row.id)
         contents = client.get('api/test/items/list')
         assert len([row for row in contents.main_table().rows if row.name == 'Sofa']) == 0
@@ -168,7 +170,7 @@ def test_read_write(dburl):
         items = data.main_table()
 
         for row in items.rows:
-            if row.name == 'Sofa':
+            if row.name == 'Table':
                 row.price = 81
 
         client.put('api/test/update-items', 

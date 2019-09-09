@@ -77,7 +77,11 @@ def put_api_test_item_record(itemid):
 @app.delete('/api/test/item/<itemid>', name='delete_api_test_item_record')
 def delete_api_test_item_record(itemid):
     with app.dbconn() as conn:
-        api.sql_void(conn, "delete from item where id=%(s)s", {'s': itemid})
+        item = rtlib.simple_table(['id'])
+        with item.adding_row() as r2:
+            r2.id = int(itemid)
+        with api.writeblock(conn) as w:
+            w.delete_rows('item', item)
         conn.commit()
     return api.Results().json_out()
 

@@ -29,7 +29,8 @@ class WriteChunk:
     def __init__(self, conn):
         self.conn = conn
 
-    def upsert_rows(self, tname, table):
+    @staticmethod
+    def _split_table_name(tname):
         if tname.find('.') >= 0:
             sx, tx = tname.split('.')
         else:
@@ -39,6 +40,11 @@ class WriteChunk:
             raise RuntimeError('invalid schema name "{}" (as determined by regex only)'.format(sx))
         if None == re.match('[a-zA-Z_][a-z0-9A-Z_]*', tx):
             raise RuntimeError('invalid table name "{}" (as determined by regex only)'.format(tx))
+
+        return sx, tx
+
+    def upsert_rows(self, tname, table):
+        sx, tx = WriteChunk._split_table_name(tname)
 
         if not hasattr(table, 'deleted_keys'):
             table.deleted_keys = []
@@ -68,15 +74,7 @@ class WriteChunk:
         mog.persist(self.conn, table)
 
     def delete_rows(self, tname, table):
-        if tname.find('.') >= 0:
-            sx, tx = tname.split('.')
-        else:
-            sx, tx = 'public', tname
-
-        if None == re.match('[a-zA-Z_][a-z0-9A-Z_]*', sx):
-            raise RuntimeError('invalid schema name "{}" (as determined by regex only)'.format(sx))
-        if None == re.match('[a-zA-Z_][a-z0-9A-Z_]*', tx):
-            raise RuntimeError('invalid table name "{}" (as determined by regex only)'.format(tx))
+        sx, tx = WriteChunk._split_table_name(tname)
 
         keys = sqlread.sql_1row(self.conn, PRIM_KEY_SELECT, {'sname': sx, 'tname': tx})
         if list(sorted(keys)) != list(sorted(table.DataRow.__slots__)):
@@ -91,15 +89,7 @@ class WriteChunk:
             cursor.execute(delete_sql.format(t=tname, columns=c, v=values))
 
     def insert_rows(self, tname, table):
-        if tname.find('.') >= 0:
-            sx, tx = tname.split('.')
-        else:
-            sx, tx = 'public', tname
-
-        if None == re.match('[a-zA-Z_][a-z0-9A-Z_]*', sx):
-            raise RuntimeError('invalid schema name "{}" (as determined by regex only)'.format(sx))
-        if None == re.match('[a-zA-Z_][a-z0-9A-Z_]*', tx):
-            raise RuntimeError('invalid table name "{}" (as determined by regex only)'.format(tx))
+        sx, tx = WriteChunk._split_table_name(tname)
 
         insert_sql = """insert into {t} ({columns}) {v}"""
 

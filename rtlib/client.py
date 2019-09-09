@@ -1,5 +1,4 @@
 import contextlib
-import collections
 from . import reportcore
 from . import serialization
 

@@ -1,6 +1,7 @@
 [run]
 omit = 
     # blessed virtual env directory
+    */bottle.py
     */site-packages/*
     */site.py
     */sitecustomize.py
