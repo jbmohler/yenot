@@ -1,6 +1,4 @@
 bottle
 paste
 requests
-fuzzyparsers
 psycopg2-binary
-bcrypt
