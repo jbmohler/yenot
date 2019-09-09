@@ -97,6 +97,11 @@ def request_content_title(self):
     return request.route.name
 
 
+def add_sitevars(self, sitevars):
+    for c in sitevars:
+        key, value = c.split('=')
+        self.sitevars[key] = value
+
 global_app = None
 
 class DerivedBottle(bottle.Bottle):
@@ -129,12 +134,15 @@ def init_application(dburl):
     DerivedBottle.cancel_request = cancel_request
     DerivedBottle.delayed_shutdown = delayed_shutdown
     DerivedBottle.request_content_title = request_content_title
+    DerivedBottle.add_sitevars = add_sitevars
 
     app = DerivedBottle()
     global_app = app
 
     app.pool = create_pool(dburl)
     app.dbconn_register = {}
+
+    app.sitevars = {}
 
     app.install(RequestCancelTracker())
     app.install(ExceptionTrapper())

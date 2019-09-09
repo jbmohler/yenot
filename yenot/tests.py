@@ -10,13 +10,16 @@ class RunningServer:
         self.url = url
 
 @contextlib.contextmanager
-def server_running(dburl, modules=None):
+def server_running(dburl, modules=None, sitevars=None):
     if modules == None:
         modules = []
     modules.insert(0, 'yenot.server.tests')
+    if sitevars == None:
+        sitevars = []
 
     args = [sys.executable, '../yenot/scripts/yenotserve.py'] + \
                 ['--module={}'.format(m) for m in modules] + \
+                ['--sitevar={}'.format(m) for m in sitevars] + \
                 [dburl]
     p = subprocess.Popen(args, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
 

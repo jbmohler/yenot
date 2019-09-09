@@ -10,10 +10,15 @@ if __name__ == '__main__':
     parse.add_argument('--module', 
             action='append', default=[],
             help='specify module to import before starting yenot server')
+    parse.add_argument('--sitevar', 
+            action='append', default=[],
+            help='add site variable')
 
     args = parse.parse_args()
 
     app = yenot.backend.init_application(args.dburl)
+
+    app.add_sitevars(args.sitevar)
 
     for m in args.module:
         importlib.import_module(m)

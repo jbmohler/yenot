@@ -179,8 +179,21 @@ def test_read_write(dburl):
         client.put('api/test/update-item-extras', 
                     files={'item': items.as_http_post_file(inclusions=['name', 'price', 'client_class'])})
 
+def test_sitevar_reads(dburl):
+    sitevars = [
+            '[group1].[value1]=g1v1',
+            '[group1].[value2]=g1v2',
+            '[group2].[value1]=g2v1']
+    with yenot.tests.server_running(dburl, sitevars=sitevars) as server:
+        session = yclient.YenotSession(server.url)
+        client = session.std_client()
+
+        content = client.get('api/test/read-sitevar', key='[group1].[value1]')
+        assert content.keys['value-get'] == 'g1v1'
+
 if __name__ == '__main__':
     init_database(test_url(TEST_DATABASE))
     test_server_info(test_url(TEST_DATABASE))
     test_item_crud(test_url(TEST_DATABASE))
     test_read_write(test_url(TEST_DATABASE))
+    test_sitevar_reads(test_url(TEST_DATABASE))
