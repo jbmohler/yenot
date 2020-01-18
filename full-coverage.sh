@@ -1,7 +1,11 @@
 #!/bin/sh
 
-export YENOT_PORT=8088
-export YENOT_DB_URL=postgresql:///my_coverage_test
+if [ -z "$YENOT_PORT" ]; then
+	export YENOT_PORT=8088
+fi
+if [ -z "$YENOT_DB_URL" ]; then
+	export YENOT_DB_URL=postgresql:///my_coverage_test
+fi
 
 rm -rf .coverage
 rm -rf .coverage.*
@@ -19,12 +23,12 @@ else
 	exit
 fi
 
+set -e
+
 COVERAGE_PROCESS_START=.coveragerc pytest tests
 COVERAGE_PROCESS_START=.coveragerc python -m doctest yenot/backend/sqlread.py
 COVERAGE_PROCESS_START=.coveragerc python tests/end-to-end.py
+
 coverage combine
 coverage report
-if [ ]; then 
-	coverage html
-	xdg-open htmlcov/index.html &>/dev/null
-fi
+coverage html

@@ -17,7 +17,10 @@ def server_running(dburl, modules=None, sitevars=None):
     if sitevars == None:
         sitevars = []
 
-    args = [sys.executable, '../yenot/scripts/yenotserve.py'] + \
+    repo_root = '.'
+    if 'YENOT_REPO' in os.environ:
+        repo_root = os.environ['YENOT_REPO']
+    args = [sys.executable, os.path.join(repo_root, 'scripts/yenotserve.py')] + \
                 ['--module={}'.format(m) for m in modules] + \
                 ['--sitevar={}'.format(m) for m in sitevars] + \
                 [dburl]

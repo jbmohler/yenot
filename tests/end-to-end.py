@@ -6,14 +6,6 @@ import rtlib
 import yenot.client as yclient
 import yenot.tests
 
-TEST_DATABASE = 'yenot_e2e_test'
-
-def test_url(dbname):
-    if 'YENOT_DB_URL' in os.environ:
-        return os.environ['YENOT_DB_URL']
-    # Fall back to local unix socket.  This is the url for unix domain socket.
-    return 'postgresql:///{}'.format(dbname)
-
 def init_database(dburl):
     r = os.system('{} ./scripts/init-database.py {} --full-recreate --ddl-script=#yenotroot#/tests/item.sql --user=admin'.format(sys.executable, dburl))
     if r != 0:
@@ -194,8 +186,9 @@ def test_sitevar_reads(dburl):
         assert content.keys['value-get'] == 'g1v1'
 
 if __name__ == '__main__':
-    init_database(test_url(TEST_DATABASE))
-    test_server_info(test_url(TEST_DATABASE))
-    test_item_crud(test_url(TEST_DATABASE))
-    test_read_write(test_url(TEST_DATABASE))
-    test_sitevar_reads(test_url(TEST_DATABASE))
+    dburl = os.environ['YENOT_DB_URL']
+    init_database(dburl)
+    test_server_info(dburl)
+    test_item_crud(dburl)
+    test_read_write(dburl)
+    test_sitevar_reads(dburl)
