@@ -1,0 +1,86 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  smoke-test:
+    docker:
+      - image: circleci/python:3.7.5
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv ~/venv
+            . ~/venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -e .
+
+      - run:
+          name: run top level import
+          command: |
+            . ~/venv/bin/activate
+            python -c "import yenot; print(yenot.__path__)"
+
+  run-tests:
+    docker:
+      - image: circleci/python:3.7.5
+        environment:
+          YENOT_PORT: 8088
+          YENOT_DB_URL: postgresql://root@localhost/circle_test
+
+      - image: circleci/postgres:11.3-alpine-ram
+        environment:
+          # POSTGRES_INITDB_ARGS: scripts/sql/init/reset.sql
+          POSTGRES_USER: root
+          POSTGRES_DB: circle_test
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv ~/venv
+            . ~/venv/bin/activate
+            pip install --upgrade pip
+            pip install -r requirements.txt
+            pip install -r requirements-dev.txt
+            echo "import coverage; coverage.process_startup()" > ~/venv/lib/python3.7/site-packages/coverage_startup.pth
+            pip install -e .
+
+      - save_cache:
+          paths:
+            - ~/venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+
+      - run:
+          name: run tests
+          command: |
+            . ~/venv/bin/activate
+            sh full-coverage.sh
+
+      - store_artifacts:
+          path: ~/repo/htmlcov
+
+workflows:
+  version: 2
+  all-checks:
+    jobs:
+      - smoke-test
+      - run-tests
