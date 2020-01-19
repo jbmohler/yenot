@@ -56,15 +56,15 @@ def server_running(dburl, modules=None, sitevars=None):
         # do cool testing things
         try:
             yield RunningServer(url)
-        except:
-            print("*** Test runner traceback ***")
-            traceback.print_exc()
+        finally:
+            try:
+                requests.put("{}/api/server/shutdown".format(url))
+                # p.terminate()
 
-        requests.put("{}/api/server/shutdown".format(url))
-        # p.terminate()
-
-        print("waiting on process to close")
-        p.wait()
-        print("closed; exiting")
+                print("waiting on process to close")
+                p.wait()
+                print("closed; exiting")
+            finally:
+                p.terminate()
     else:
         print("server failed to start")
