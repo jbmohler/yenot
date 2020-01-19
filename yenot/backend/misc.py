@@ -112,7 +112,7 @@ def tab2_rows_default(columns, indices, default):
     return rows
 
 
-###### rtlib SERVER incoming UTILS ####
+# rtlib server incoming utils
 
 
 def table_from_tab2(

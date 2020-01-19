@@ -13,6 +13,8 @@ import psycopg2.extras
 import psycopg2.pool
 import bottle
 from bottle import request, response
+from paste import httpserver
+from paste.translogger import TransLogger
 from . import misc
 
 # to become a method of app
@@ -59,8 +61,6 @@ def cancel_request(self, cancel_token):
 def create_connection(dburl):
     result = urllib.parse.urlsplit(dburl)
 
-    dbname = result.path[1:]
-
     kwargs = {"dbname": result.path[1:]}
     if result.hostname != None:
         kwargs["host"] = result.hostname
@@ -77,8 +77,6 @@ def create_connection(dburl):
 
 def create_pool(dburl):
     result = urllib.parse.urlsplit(dburl)
-
-    dbname = result.path[1:]
 
     kwargs = {"dbname": result.path[1:]}
     if result.hostname not in [None, ""]:
@@ -121,10 +119,6 @@ class DerivedBottle(bottle.Bottle):
     pass
 
 
-# resume imports
-from paste import httpserver
-from paste.translogger import TransLogger
-
 # See http://stackoverflow.com/questions/32404/
 
 
@@ -165,7 +159,7 @@ def init_application(dburl):
     app.install(ExceptionTrapper())
 
     # hook up the basic stuff
-    import yenot.server
+    import yenot.server  # noqa: F401
 
     port = 8080
     if "YENOT_PORT" in os.environ:
