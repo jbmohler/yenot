@@ -1,5 +1,4 @@
 from bottle import request
-import rtlib
 import yenot.backend.api as api
 
 app = api.get_global_app()
@@ -46,6 +45,15 @@ def get_test_parse_types():
     mydate = api.parse_date(request.query.get("mydate"))
     mybool = api.parse_bool(request.query.get("mybool"))
     myint = api.parse_int(request.query.get("myint"))
+
+    if myfloat < 0.0:
+        raise api.UserError('check-value', 'no negatives')
+    if str(mydate) >= '2020-01-01':
+        raise api.UserError('check-value', 'no current date')
+    if mybool:
+        raise api.UserError('check-value', 'no truth')
+    if myint < 0:
+        raise api.UserError('check-value', 'no negatives')
 
     return api.Results().json_out()
 

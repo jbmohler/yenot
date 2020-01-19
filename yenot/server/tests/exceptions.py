@@ -1,4 +1,3 @@
-from bottle import request
 import yenot.backend.api as api
 
 app = api.get_global_app()
@@ -41,4 +40,4 @@ def get_api_test_user_error():
 
 @app.get("/api/test/python-error", name="get_api_test_python_error")
 def get_api_test_python_error():
-    no_function_by_this_name()
+    no_function_by_this_name() # noqa: F821

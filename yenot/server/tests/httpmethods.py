@@ -1,4 +1,3 @@
-from bottle import request
 import yenot.backend.api as api
 
 app = api.get_global_app()

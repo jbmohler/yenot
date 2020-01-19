@@ -1,9 +1,9 @@
-from . import lifecycle
+from . import lifecycle # noqa: F401
 
-from . import exceptions
-from . import tables
-from . import prototypes
-from . import httpmethods
-from . import sitevars
+from . import exceptions # noqa: F401
+from . import tables # noqa: F401
+from . import prototypes # noqa: F401
+from . import httpmethods # noqa: F401
+from . import sitevars # noqa: F401
 
-from . import itemexample
+from . import itemexample # noqa: F401

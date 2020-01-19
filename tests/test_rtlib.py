@@ -3,11 +3,11 @@ import rtlib
 
 def test_fixedrecord_errors():
     try:
-        fr = rtlib.fixedrecord("Test", ["asdf", "45678"])
+        rtlib.fixedrecord("Test", ["asdf", "45678"])
     except Exception as e:
         assert str(e).find("must be valid") > 0
     try:
-        fr = rtlib.fixedrecord("Test", ["asdf", "class"])
+        rtlib.fixedrecord("Test", ["asdf", "class"])
     except Exception as e:
         assert str(e).find("must not be keywords") > 0
 
