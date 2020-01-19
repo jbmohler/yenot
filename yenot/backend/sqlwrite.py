@@ -1,7 +1,6 @@
 import re
 import contextlib
 from . import sqlread
-import psycopg2.extras as extras
 
 
 PRIM_KEY_SELECT = """
