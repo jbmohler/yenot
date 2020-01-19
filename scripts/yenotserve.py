@@ -3,16 +3,21 @@ import argparse
 import importlib
 import yenot.backend
 
-if __name__ == '__main__':
-    parse = argparse.ArgumentParser('serve a collection of yenot modules')
-    parse.add_argument('dburl', 
-            help='database identifier in url form (e.g. postgresql://user@host/dbname)')
-    parse.add_argument('--module', 
-            action='append', default=[],
-            help='specify module to import before starting yenot server')
-    parse.add_argument('--sitevar', 
-            action='append', default=[],
-            help='add site variable')
+if __name__ == "__main__":
+    parse = argparse.ArgumentParser("serve a collection of yenot modules")
+    parse.add_argument(
+        "dburl",
+        help="database identifier in url form (e.g. postgresql://user@host/dbname)",
+    )
+    parse.add_argument(
+        "--module",
+        action="append",
+        default=[],
+        help="specify module to import before starting yenot server",
+    )
+    parse.add_argument(
+        "--sitevar", action="append", default=[], help="add site variable"
+    )
 
     args = parse.parse_args()
 
@@ -23,6 +28,7 @@ if __name__ == '__main__':
     for m in args.module:
         importlib.import_module(m)
     import yenot.backend.api as api
+
     for func in api.app_init_functions:
         func(app)
 

@@ -78,9 +78,34 @@ jobs:
       - store_artifacts:
           path: ~/repo/htmlcov
 
+  code-quality:
+    docker:
+      # specify the version you desire here
+      - image: circleci/python:3.7.5
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv ~/venv
+            . ~/venv/bin/activate
+            pip install --upgrade pip
+            pip install black
+
+      - run:
+          name: run code quality
+          command: |
+            . ~/venv/bin/activate
+            cd ~/repo
+            git ls-files '*.py' | xargs black --check
+
 workflows:
   version: 2
   all-checks:
     jobs:
       - smoke-test
       - run-tests
+      - code-quality

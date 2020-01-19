@@ -2,6 +2,7 @@ import contextlib
 from . import reportcore
 from . import serialization
 
+
 def simple_table(columns, column_map=None):
     if column_map == None:
         column_map = {}
@@ -30,7 +31,9 @@ class ClientTable:
         return reportcore.as_python(row_field_list, to_localtime=self.to_localtime)
 
     def row_factory(self, row_field_list, mixin):
-        self.DataRow = reportcore.fixedrecord('DataRow', [r[0] for r in row_field_list], mixin=mixin)
+        self.DataRow = reportcore.fixedrecord(
+            "DataRow", [r[0] for r in row_field_list], mixin=mixin
+        )
         to_python = self.converter(row_field_list)
 
         def init_bare(r):
@@ -43,14 +46,14 @@ class ClientTable:
             x._rtlib_init_()
             return x
 
-        return init_custom if hasattr(self.DataRow, '_rtlib_init_') else init_bare
+        return init_custom if hasattr(self.DataRow, "_rtlib_init_") else init_bare
 
     @contextlib.contextmanager
     def adding_row(self):
         row = self.candidate_row()
         yield row
         self.rows.append(row)
-        if hasattr(row, '_row_added_'):
+        if hasattr(row, "_row_added_"):
             row._row_added_()
 
     def candidate_row(self):
@@ -58,16 +61,23 @@ class ClientTable:
         try:
             newself._init_block = True
             newself.__init__(**{a: None for a in self.DataRow.__slots__})
-            if hasattr(newself, '_init_candidate_'):
+            if hasattr(newself, "_init_candidate_"):
                 newself._init_candidate_()
             return newself
         finally:
             newself._init_block = False
 
-    def as_writable(self, exclusions=None, inclusions=None, extensions=None, getter=None):
+    def as_writable(
+        self, exclusions=None, inclusions=None, extensions=None, getter=None
+    ):
         assert exclusions == None or inclusions == None
 
-        if exclusions == None and inclusions == None and extensions == None and getter == None:
+        if (
+            exclusions == None
+            and inclusions == None
+            and extensions == None
+            and getter == None
+        ):
             attrs = self.DataRow.__slots__
             slimrows = [r._as_tuple() for r in self.rows]
         else:
@@ -89,9 +99,11 @@ class ClientTable:
         keys = {}
         if len(self.deleted_rows):
             if len(self.pkey) == 0:
-                raise RuntimeError('no primary key declared; needed for deleted row set')
+                raise RuntimeError(
+                    "no primary key declared; needed for deleted row set"
+                )
             pfunc = lambda row: [getattr(row, p1) for p1 in self.pkey]
-            keys['deleted'] = [pfunc(row) for row in self.deleted_rows]
+            keys["deleted"] = [pfunc(row) for row in self.deleted_rows]
         return (keys, attrs, slimrows)
 
     def as_http_post_file(self, *args, **kwargs):

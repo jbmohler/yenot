@@ -1,0 +1,50 @@
+import os
+import argparse
+import flake8.api.legacy as flake8
+
+ig = [
+    'E999',
+    'E117', # over-indented
+    'E122', # continuation line missing indentation or outdented
+    'E123', # closing bracket does not match indentation of opening bracket's line
+    'E126', # over indentation
+    'E127', # over-indented
+    'E128', # under indentity
+    'E131', # continuation line unaligned for hanging indent
+    'E302', # expected 2 blank lines
+    'E305', # expected 2 blank lines after class
+    'E226', # whitespace around arith
+    'E261', # at least 2 spaces before inline comment
+    'E265', # block comment should start with '# '
+    'E306', # expected 1 blank line before a nested definition, found 0
+    'E501', # line too long
+    'E502', # redundant backslash
+    'E711', # comp to none
+    'E712', # comparison to True should be 'if cond is True:'
+    'E722', # do not use bare 'except'
+    'E731', # do not assign a lambda expression, use a def
+    'E101', 'W191', # tab/space indent complaints
+    'W291', # trailing whitespace
+    'W293', # blank line contains whitespace
+    'F403', # star import complaint
+    'E999']
+
+def flake_dir(dirname):
+    style_guide = flake8.get_style_guide(ignore=ig)
+
+    for r, d, f in os.walk(dirname):
+        f = [fname for fname in f if fname.endswith('.py')]
+        f = [os.path.join(r, fname) for fname in f]
+        if f == []:
+            continue
+        report = style_guide.check_files(f)
+        #print(report.get_statistics('E'))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser('WPSG Python Flake tool')
+    parser.add_argument('dirname', nargs='*', help='directory(ies) to flake')
+
+    args = parser.parse_args()
+
+    for dirname in args.dirname:
+        flake_dir(dirname)

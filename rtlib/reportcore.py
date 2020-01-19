@@ -11,11 +11,14 @@ KEYWORD_SET = set(keyword.kwlist)
 # This roughly models a Qt QAbstractItemModel, but it has no Qt dependency.
 # See apputils.models for the rest of that.
 
+
 class Unassigned:
     def __repr__(self):
-        return 'unassigned'
+        return "unassigned"
+
 
 unassigned = Unassigned()
+
 
 class SlottedRow:
     def __init__(self, *args, **kwargs):
@@ -31,8 +34,12 @@ class SlottedRow:
         return {k: getattr(self, k, None) for k in self.__class__.__slots__}
 
     def __repr__(self):
-        values = ['{}={}'.format(k, repr(getattr(self, k, unassigned))) for k in self.__class__.__slots__]
-        return '{}({})'.format(self.__class__.__name__, ', '.join(values))
+        values = [
+            "{}={}".format(k, repr(getattr(self, k, unassigned)))
+            for k in self.__class__.__slots__
+        ]
+        return "{}({})".format(self.__class__.__name__, ", ".join(values))
+
 
 def fixedrecord(name, members, mixin=None):
     """
@@ -40,23 +47,30 @@ def fixedrecord(name, members, mixin=None):
     """
     kw_clash = KEYWORD_SET.intersection(members)
     if len(kw_clash) > 0:
-        raise RuntimeError('refused identifiers ({}):  fixedrecord identifiers must not be keywords'.format(', '.join(kw_clash)))
+        raise RuntimeError(
+            "refused identifiers ({}):  fixedrecord identifiers must not be keywords".format(
+                ", ".join(kw_clash)
+            )
+        )
     junk = [m for m in members if None == IDENTIFIER_RE.match(m)]
     if len(junk) > 0:
-        raise RuntimeError('refused identifiers ({}):  fixedrecord identifiers must be valid Python variable identifier'.format(', '.join(junk)))
+        raise RuntimeError(
+            "refused identifiers ({}):  fixedrecord identifiers must be valid Python variable identifier".format(
+                ", ".join(junk)
+            )
+        )
 
-    Kls1 = type(name, (SlottedRow,), {'__slots__': members})
+    Kls1 = type(name, (SlottedRow,), {"__slots__": members})
     if mixin == None:
         return Kls1
     elif isinstance(mixin, (list, tuple)):
-        return type(name, (Kls1,)+tuple(mixin), {})
+        return type(name, (Kls1,) + tuple(mixin), {})
     else:
         return type(name, (Kls1, mixin), {})
 
 
 class ColumnAction:
-    def __init__(self, label, callback, 
-            scope='global', defaulted=False, reloads=False):
+    def __init__(self, label, callback, scope="global", defaulted=False, reloads=False):
         self.label = label
         self.callback = callback
         self.scope = scope
@@ -64,22 +78,41 @@ class ColumnAction:
         self.reloads = reloads
 
     def matches_scope(self, column):
-        return self.scope == 'global' or column.represents
+        return self.scope == "global" or column.represents
 
     def interpolated_label(self, column):
         return self.label.format(header=column.label)
 
 
 class Column:
-    def __init__(self, attr, label, checkbox=False, check_attr=None, 
-                            editable=False, alignment='left', formatter=None, 
-                            coerce_edit=None, url_factory=None, url_key=None, url_new_window=False, 
-                            max_length=None, is_numeric=False,
-                            char_width=None,
-                            represents=False, primary_key=False, hidden=False,
-                            widget_factory=None, widget_kwargs=None, 
-                            background_attr=None, foreground_attr=None,
-                            sortkey=None, sortnull=None, actions=None, add_actions=None):
+    def __init__(
+        self,
+        attr,
+        label,
+        checkbox=False,
+        check_attr=None,
+        editable=False,
+        alignment="left",
+        formatter=None,
+        coerce_edit=None,
+        url_factory=None,
+        url_key=None,
+        url_new_window=False,
+        max_length=None,
+        is_numeric=False,
+        char_width=None,
+        represents=False,
+        primary_key=False,
+        hidden=False,
+        widget_factory=None,
+        widget_kwargs=None,
+        background_attr=None,
+        foreground_attr=None,
+        sortkey=None,
+        sortnull=None,
+        actions=None,
+        add_actions=None,
+    ):
         self.attr = attr
         self.label = label
         # TODO:  figure out the difference between represents and primary_key; there is a subtlety with regards to the autoid and human readable name
@@ -91,25 +124,25 @@ class Column:
         self.widget_factory = widget_factory
         self.widget_kwargs = {} if widget_kwargs == None else widget_kwargs
         if coerce_edit == None:
-            coerce_edit = lambda x: str(x) if x != None else ''
+            coerce_edit = lambda x: str(x) if x != None else ""
         self.coerce_edit = coerce_edit
         self.checkbox = checkbox
         self.char_width = char_width
         self.check_attr = check_attr
         self.alignment = alignment
         if formatter == None:
-            formatter = lambda x: str(x) if x != None else ''
+            formatter = lambda x: str(x) if x != None else ""
         self.formatter = formatter
         self.is_numeric = is_numeric
         self.sortnull = sortnull
         if sortkey == None:
-            nkey = 'c' if self.sortnull == 'last' else 'a'
+            nkey = "c" if self.sortnull == "last" else "a"
             # null items sort high
-            sortkey = lambda x: (nkey, '') if x == None else ('b', x)
+            sortkey = lambda x: (nkey, "") if x == None else ("b", x)
         self.sortkey = sortkey
         if actions == None:
             # callable?, templated string, (global, represents)
-            actions = [ColumnAction('View &{header}', '__url__', defaulted=True)]
+            actions = [ColumnAction("View &{header}", "__url__", defaulted=True)]
         if add_actions != None:
             actions = list(actions) + add_actions
         self.actions = list(actions)
@@ -127,48 +160,58 @@ class Column:
 
 TYPE_DEFINITION_PLUGINS = []
 
+
 def add_type_definition_plugin(tplug):
     global TYPE_DEFINITION_PLUGINS
     TYPE_DEFINITION_PLUGINS.append(tplug)
 
+
 def attr_to_label(attr):
-    return attr.replace('_', ' ').title()
+    return attr.replace("_", " ").title()
+
 
 def api_to_model(attr, meta):
     if meta == None:
         meta = {}
 
-    if 'label' not in meta:
-        meta['label'] = attr_to_label(attr)
-    type_ = meta.pop('type', None)
-    return field(attr, meta.pop('label'), type_=type_, **meta)
+    if "label" not in meta:
+        meta["label"] = attr_to_label(attr)
+    type_ = meta.pop("type", None)
+    return field(attr, meta.pop("label"), type_=type_, **meta)
+
 
 def field(attr, label, editable=False, type_=None, **kwargs):
     global TYPE_DEFINITION_PLUGINS
-    meta = {'label': label, 
-            'editable': editable}
+    meta = {"label": label, "editable": editable}
 
     meta.update(kwargs)
     for tplug in TYPE_DEFINITION_PLUGINS:
         tplug.polish(attr, type_, meta)
 
     # TODO:  figure out what this is about
-    if type_ == 'options' and 'formatter' not in meta and 'widget_kwargs' in kwargs and 'options' in kwargs['widget_kwargs']:
-        d = {v: k for k, v in kwargs['widget_kwargs']['options']}
-        meta['formatter'] = lambda v, d=d: d.get(v, '')
+    if (
+        type_ == "options"
+        and "formatter" not in meta
+        and "widget_kwargs" in kwargs
+        and "options" in kwargs["widget_kwargs"]
+    ):
+        d = {v: k for k, v in kwargs["widget_kwargs"]["options"]}
+        meta["formatter"] = lambda v, d=d: d.get(v, "")
 
     c = Column(attr, **meta)
     c.type_ = type_
     return c
 
+
 def type_included(type_):
     if type_ == None:
         return True
-    elif type_ in ['text_color']:
+    elif type_ in ["text_color"]:
         return False
-    elif '.' in type_ and type_.split('.', 1)[1] == 'surrogate':
+    elif "." in type_ and type_.split(".", 1)[1] == "surrogate":
         return False
     return True
+
 
 def parse_columns(column_list):
     # wish to mutate -- work on a copy
@@ -177,9 +220,10 @@ def parse_columns(column_list):
     def column_included(attr, meta):
         if meta == None:
             return True
-        return type_included(meta.get('type', None))
+        return type_included(meta.get("type", None))
 
     return [api_to_model(*x) for x in column_list if column_included(*x)]
+
 
 def parse_columns_full(column_list):
     # TODO:  this is an obnoxious minor variant of parse_columns
@@ -187,18 +231,20 @@ def parse_columns_full(column_list):
     column_list = copy.deepcopy(column_list)
     return [api_to_model(*x) for x in column_list]
 
+
 def parse_datetime(v):
     if v == None:
         return v
     try:
-        return datetime.datetime.strptime(v, '%Y-%m-%dT%H:%M:%S')
+        return datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S")
     except ValueError:
         pass
     try:
-        return datetime.datetime.strptime(v, '%Y-%m-%dT%H:%M:%S.%f')
+        return datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
     except ValueError:
         pass
-    raise ValueError('could not parse {} as datetime'.format(v))
+    raise ValueError("could not parse {} as datetime".format(v))
+
 
 def parse_date(s):
     """
@@ -211,18 +257,19 @@ def parse_date(s):
         return None
     if isinstance(s, datetime.date):
         return s
-    if len(s) != 10 or s[4] != '-' or s[7] != '-':
-        raise ValueError('invalid date string {}'.format(s))
+    if len(s) != 10 or s[4] != "-" or s[7] != "-":
+        raise ValueError("invalid date string {}".format(s))
     return datetime.date(int(s[:4]), int(s[5:7]), int(s[8:10]))
+
 
 def parse_bool(v):
     if isinstance(v, str):
         v = v.lower()
-    if v in [True, 1, 'true', 'yes']:
+    if v in [True, 1, "true", "yes"]:
         return True
-    if v in [False, 0, 'false', 'no']:
+    if v in [False, 0, "false", "no"]:
         return False
-    raise ValueError('unacceptable bool import:  {}'.format(v))
+    raise ValueError("unacceptable bool import:  {}".format(v))
 
 
 def as_python(columns, to_localtime=True):
@@ -230,19 +277,29 @@ def as_python(columns, to_localtime=True):
         return tuple(t(v) for t, v in zip(converters, _tuple))
 
     identity = lambda v: v
+
     def column_converter(attr, meta):
-        if meta == None or meta.get('type', None) == None:
+        if meta == None or meta.get("type", None) == None:
             return identity
-        elif meta['type'] == 'boolean':
+        elif meta["type"] == "boolean":
             return lambda v: False if v == None else v
-        elif meta['type'] == 'binary':
-            return lambda v: None if v == None else base64.b64decode(v.encode('ascii'))
-        elif meta['type'] == 'date':
+        elif meta["type"] == "binary":
+            return lambda v: None if v == None else base64.b64decode(v.encode("ascii"))
+        elif meta["type"] == "date":
             return lambda v: parse_date(v) if v != None else None
-        elif meta['type'] == 'datetime':
-            if to_localtime and not meta.get('widget_kwargs', {}).get('localtime', False):
-                offset = (datetime.datetime.utcnow()-datetime.datetime.now()).total_seconds()/3600
-                return lambda v, offset=offset: parse_datetime(v)-datetime.timedelta(hours=offset) if v != None else v
+        elif meta["type"] == "datetime":
+            if to_localtime and not meta.get("widget_kwargs", {}).get(
+                "localtime", False
+            ):
+                offset = (
+                    datetime.datetime.utcnow() - datetime.datetime.now()
+                ).total_seconds() / 3600
+                return (
+                    lambda v, offset=offset: parse_datetime(v)
+                    - datetime.timedelta(hours=offset)
+                    if v != None
+                    else v
+                )
             else:
                 return parse_datetime
         else:
@@ -251,18 +308,28 @@ def as_python(columns, to_localtime=True):
     converters = [column_converter(*x) for x in columns]
     return functools.partial(coerce, converters)
 
+
 def as_client(columns, to_localtime=True):
     def coerce(converters, _tuple):
         return tuple(t(v) for t, v in zip(converters, _tuple))
 
     identity = lambda v: v
+
     def column_converter(attr, meta):
-        if meta == None or meta.get('type', None) == None:
+        if meta == None or meta.get("type", None) == None:
             return identity
-        elif meta['type'] == 'datetime':
-            if to_localtime and not meta.get('widget_kwargs', {}).get('localtime', False):
-                offset = (datetime.datetime.utcnow()-datetime.datetime.now()).total_seconds()/3600
-                return lambda v, offset=offset: v-datetime.timedelta(hours=offset) if v != None else v
+        elif meta["type"] == "datetime":
+            if to_localtime and not meta.get("widget_kwargs", {}).get(
+                "localtime", False
+            ):
+                offset = (
+                    datetime.datetime.utcnow() - datetime.datetime.now()
+                ).total_seconds() / 3600
+                return (
+                    lambda v, offset=offset: v - datetime.timedelta(hours=offset)
+                    if v != None
+                    else v
+                )
             else:
                 return identity
         else:

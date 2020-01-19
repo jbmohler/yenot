@@ -3,9 +3,11 @@ import pytest
 import yenot.backend
 import yenot.backend.api as api
 
+
 @pytest.fixture
 def conn():
-    return yenot.backend.create_connection(os.environ['YENOT_DB_URL'])
+    return yenot.backend.create_connection(os.environ["YENOT_DB_URL"])
+
 
 def test_sql_readers(conn):
     rlist = api.sql_rows(conn, "select 1")
@@ -18,7 +20,7 @@ def test_sql_readers(conn):
     assert obj.one == 1
     assert obj.two == 2
 
-    params = {'x': 'ex', 'y': 'why'}
+    params = {"x": "ex", "y": "why"}
     obj = api.sql_1object(conn, "select %(x)s as col1, %(y)s as col2", params)
-    assert obj.col1 == 'ex'
-    assert obj.col2 == 'why'
+    assert obj.col1 == "ex"
+    assert obj.col2 == "why"
