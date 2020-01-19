@@ -159,7 +159,7 @@ def init_application(dburl):
     app.install(ExceptionTrapper())
 
     # hook up the basic stuff
-    import yenot.server # noqa: F401
+    import yenot.server  # noqa: F401
 
     port = 8080
     if "YENOT_PORT" in os.environ:

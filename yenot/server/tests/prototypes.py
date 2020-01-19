@@ -47,13 +47,13 @@ def get_test_parse_types():
     myint = api.parse_int(request.query.get("myint"))
 
     if myfloat < 0.0:
-        raise api.UserError('check-value', 'no negatives')
-    if str(mydate) >= '2020-01-01':
-        raise api.UserError('check-value', 'no current date')
+        raise api.UserError("check-value", "no negatives")
+    if str(mydate) >= "2020-01-01":
+        raise api.UserError("check-value", "no current date")
     if mybool:
-        raise api.UserError('check-value', 'no truth')
+        raise api.UserError("check-value", "no truth")
     if myint < 0:
-        raise api.UserError('check-value', 'no negatives')
+        raise api.UserError("check-value", "no negatives")
 
     return api.Results().json_out()
 
