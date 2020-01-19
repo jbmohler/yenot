@@ -26,20 +26,26 @@ sanitize_prefix = sqlread.sanitize_prefix
 sanitize_fts = sqlread.sanitize_fts
 sanitize_fragment = sqlread.sanitize_fragment
 
+
 def get_global_app():
     from . import plugins
+
     return plugins.global_app
+
 
 app_init_functions = []
 data_init_functions = []
+
 
 def add_server_init(ff):
     global app_init_functions
     app_init_functions.append(ff)
 
+
 def add_data_init(ff):
     global data_init_functions
     data_init_functions.append(ff)
+
 
 class Results:
     """
@@ -51,8 +57,9 @@ class Results:
     that the client code in the server end-points will be obscured by unusual
     semantics?
     """
+
     def __init__(self, default_title=False):
-        self.keys = {'headers': []}
+        self.keys = {"headers": []}
         self._main_name = None
         self._t = {}
         if default_title:
@@ -71,9 +78,10 @@ class Results:
             results.key_labels += 'Title 1'
             results.key_labels += 'Title 2'
         """
+
         class _:
             def __iadd__(_self, other):
-                self.keys['headers'] += [other]
+                self.keys["headers"] += [other]
 
         return _()
 
@@ -103,19 +111,21 @@ class Results:
         return _()
 
     def finalize(self):
-        if 'summary' not in self.keys and self._main_name != None:
-            self.keys['summary'] = '{:,} rows'.format(len(self._t[self._main_name][1]))
+        if "summary" not in self.keys and self._main_name != None:
+            self.keys["summary"] = "{:,} rows".format(len(self._t[self._main_name][1]))
 
     def plain_old_python(self):
         self.finalize()
 
-        assert len(set(self.keys).intersection(set(self._t))) == 0, 'table names & key names cannot overlap'
+        assert (
+            len(set(self.keys).intersection(set(self._t))) == 0
+        ), "table names & key names cannot overlap"
 
         tables = self._t.copy()
 
         keys = self.keys.copy()
         keys.update(tables)
-        keys['__main_table__'] = self._main_name
+        keys["__main_table__"] = self._main_name
         return keys
 
     def json_out(self):
@@ -129,9 +139,10 @@ class Results:
             results = api.Results()
             return results.json_out()
         """
-        response.content_type = 'application/json; charset=UTF-8'
+        response.content_type = "application/json; charset=UTF-8"
         pyobj = self.plain_old_python()
-        return rtlib.serialize(pyobj).encode('utf-8')
+        return rtlib.serialize(pyobj).encode("utf-8")
+
 
 class ColumnGenerator:
     """
@@ -161,6 +172,7 @@ class ColumnGenerator:
 
     See :class:`PromptList` for additional options making sense in that context.
     """
+
     def __init__(self, prefix=None):
         self.prefix = prefix
 
@@ -168,7 +180,7 @@ class ColumnGenerator:
         if self.prefix == None:
             return ColumnGenerator(attr)
         else:
-            return ColumnGenerator(prefix='{}.{}'.format(self.prefix, attr))
+            return ColumnGenerator(prefix="{}.{}".format(self.prefix, attr))
 
     def auto(self, **kwargs):
         """
@@ -178,10 +190,12 @@ class ColumnGenerator:
 
     def __call__(self, **kwargs):
         x = kwargs.copy()
-        x['type'] = self.prefix
+        x["type"] = self.prefix
         return x
 
+
 cgen = ColumnGenerator()
+
 
 def ColumnMap(**kwargs):
     """
@@ -191,6 +205,7 @@ def ColumnMap(**kwargs):
     This is nothing but syntactic sugar for a dictionary.
     """
     return kwargs
+
 
 def PromptList(__order__, **kwargs):
     """

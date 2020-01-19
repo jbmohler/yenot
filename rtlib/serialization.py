@@ -5,6 +5,7 @@ import decimal
 
 # other places as well, but this is canonical and the others should be swallowed
 
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, datetime.datetime):
@@ -18,11 +19,13 @@ class DateTimeEncoder(json.JSONEncoder):
 
         return json.JSONEncoder.default(self, o)
 
+
 def serialize(thing, pprint=False):
     if pprint:
         return json.dumps(thing, cls=DateTimeEncoder, indent=4)
     else:
         return json.dumps(thing, cls=DateTimeEncoder)
 
+
 def to_json(thing):
-    return io.BytesIO(serialize(thing).encode('utf8'))
+    return io.BytesIO(serialize(thing).encode("utf8"))

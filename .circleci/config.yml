@@ -93,14 +93,14 @@ jobs:
             python3 -m venv ~/venv
             . ~/venv/bin/activate
             pip install --upgrade pip
-            pip install flake8
+            pip install black
 
       - run:
           name: run code quality
           command: |
             . ~/venv/bin/activate
             cd ~/repo
-            flake8
+            git ls-files '*.py' | xargs black --check
 
 workflows:
   version: 2

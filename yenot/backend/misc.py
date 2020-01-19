@@ -4,10 +4,12 @@ import rtlib
 from bottle import request
 import psycopg2.extras as extras
 
+
 class UserError(Exception):
     def __init__(self, key, msg):
         super(UserError, self).__init__(msg)
         self.key = key
+
 
 def write_event_entry(conn, ltype, ldescr, ldata):
     ins = """
@@ -16,9 +18,12 @@ values (%(lt)s, current_timestamp, %(ld)s, %(lj)s)
 returning id, logtype, logtime;"""
     dumps = lambda x: json.dumps(x, cls=rtlib.DateTimeEncoder)
     with conn.cursor(cursor_factory=extras.NamedTupleCursor) as cursor:
-        cursor.execute(ins, {'lt': ltype, 'ld': ldescr, 'lj': extras.Json(ldata, dumps=dumps)})
+        cursor.execute(
+            ins, {"lt": ltype, "ld": ldescr, "lj": extras.Json(ldata, dumps=dumps)}
+        )
         row = list(cursor.fetchall())[0]
     return row.id, row.logtype, row.logtime
+
 
 def tab2_columns_transform(columns, insert=None, remove=None, column_map=None):
     """
@@ -34,10 +39,16 @@ def tab2_columns_transform(columns, insert=None, remove=None, column_map=None):
     column_map = {} if column_map == None else column_map
 
     # Make some sanity checks about inserts and removes.
-    assert len(set(inserts.keys()).intersection(remove)) == 0, 'insertion points cannot overlap with removals'
+    assert (
+        len(set(inserts.keys()).intersection(remove)) == 0
+    ), "insertion points cannot overlap with removals"
     # TODO not sure if I want this next assert
-    assert len(set(remove).difference([c for c, _ in columns])) == 0, 'some removals do not exist'
-    assert len(set(inserts.keys()).difference([c for c, _ in columns])) == 0, 'insertion points not all found'
+    assert (
+        len(set(remove).difference([c for c, _ in columns])) == 0
+    ), "some removals do not exist"
+    assert (
+        len(set(inserts.keys()).difference([c for c, _ in columns])) == 0
+    ), "insertion points not all found"
 
     newcols = []
     for attr, meta in columns:
@@ -48,6 +59,7 @@ def tab2_columns_transform(columns, insert=None, remove=None, column_map=None):
             for a2 in inserts[attr]:
                 newcols.append((a2, column_map.get(a2, None)))
     return newcols
+
 
 def tab2_rows_transform(colrows, columns_target, transform):
     """
@@ -65,8 +77,8 @@ def tab2_rows_transform(colrows, columns_target, transform):
     target_attrs = [a for a, _ in columns_target]
     overlap = set(source_attrs).intersection(target_attrs)
 
-    RecordType = rtlib.fixedrecord('RecordType', target_attrs)
-    RowType = collections.namedtuple('RowType', target_attrs)
+    RecordType = rtlib.fixedrecord("RecordType", target_attrs)
+    RowType = collections.namedtuple("RowType", target_attrs)
 
     rows = []
     for oldrow in colrows[1]:
@@ -75,6 +87,7 @@ def tab2_rows_transform(colrows, columns_target, transform):
         transform(oldrow, row)
         rows.append(RowType(**row._as_dict()))
     return rows
+
 
 def tab2_rows_default(columns, indices, default):
     """
@@ -88,8 +101,8 @@ def tab2_rows_default(columns, indices, default):
         this is called once per element of the `indices` parameter
     """
     target_attrs = [a for a, _ in columns]
-    RecordType = rtlib.fixedrecord('RecordType', target_attrs)
-    RowType = collections.namedtuple('RowType', target_attrs)
+    RecordType = rtlib.fixedrecord("RecordType", target_attrs)
+    RowType = collections.namedtuple("RowType", target_attrs)
 
     rows = []
     for index in indices:
@@ -98,18 +111,28 @@ def tab2_rows_default(columns, indices, default):
         rows.append(RowType(**row._as_dict()))
     return rows
 
+
 ###### rtlib SERVER incoming UTILS ####
 
-def table_from_tab2(name, required=None, amendments=None, options=None, allow_extra=False):
+
+def table_from_tab2(
+    name, required=None, amendments=None, options=None, allow_extra=False
+):
     try:
-        return InboundTable.from_file(request.files[name].file, \
-                        encoding='utf8', \
-                        required=required, \
-                        amendments=amendments, \
-                        options=options, \
-                        allow_extra=allow_extra)
+        return InboundTable.from_file(
+            request.files[name].file,
+            encoding="utf8",
+            required=required,
+            amendments=amendments,
+            options=options,
+            allow_extra=allow_extra,
+        )
     except RuntimeError as e:
-        raise UserError('invalid-collection', 'Post file "{}" contains incorrect data.  {}'.format(name, str(e)))
+        raise UserError(
+            "invalid-collection",
+            'Post file "{}" contains incorrect data.  {}'.format(name, str(e)),
+        )
+
 
 class InboundTable:
     def __init__(self, columns, rows):
@@ -117,8 +140,15 @@ class InboundTable:
         self.columns = columns
 
     @classmethod
-    def from_file(cls, file, encoding='utf8', 
-                        required=None, amendments=None, options=None, allow_extra=False):
+    def from_file(
+        cls,
+        file,
+        encoding="utf8",
+        required=None,
+        amendments=None,
+        options=None,
+        allow_extra=False,
+    ):
         payload = json.loads(file.read().decode(encoding))
         keys, fields, rows = payload
         clfields = list(fields)
@@ -131,16 +161,24 @@ class InboundTable:
             allowed = allowed.union(amendments)
 
         if not allow_extra and not set(fields).issubset(allowed):
-            raise RuntimeError('Extra fields given:  {}'.format(' '.join(set(fields).difference(allowed))))
+            raise RuntimeError(
+                "Extra fields given:  {}".format(
+                    " ".join(set(fields).difference(allowed))
+                )
+            )
         if not set(required).issubset(fields):
-            raise RuntimeError('Required fields not given:  {}'.format(' '.join(set(required).difference(fields))))
+            raise RuntimeError(
+                "Required fields not given:  {}".format(
+                    " ".join(set(required).difference(fields))
+                )
+            )
         if amendments != None:
             clfields += set(amendments).difference(fields)
 
-        dr = rtlib.fixedrecord('DataRow', clfields)
+        dr = rtlib.fixedrecord("DataRow", clfields)
         rows = [dr(**dict(zip(fields, r))) for r in rows]
         self = cls([(c, None) for c in clfields], rows)
         self.DataRow = dr
-        self.deleted_keys = keys.get('deleted', [])
+        self.deleted_keys = keys.get("deleted", [])
 
         return self

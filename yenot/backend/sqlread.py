@@ -2,6 +2,7 @@ import re
 import psycopg2.extensions as psyext
 import psycopg2.extras as extras
 
+
 def sql_rows(conn, select, params=None):
     # The presence of non-none params in the call to execute causes psycopg2
     # interpolation.   This may or may not be desirable in general.
@@ -12,6 +13,7 @@ def sql_rows(conn, select, params=None):
         cursor.execute(select, params)
         rows = list(cursor.fetchall())
     return rows
+
 
 def sql_1row(conn, select, params=None):
     """
@@ -31,16 +33,17 @@ def sql_1row(conn, select, params=None):
     cursor.execute(select, params)
     results = list(cursor.fetchall())
     if len(results) == 0:
-        row = (None,)*len(cursor.description)
+        row = (None,) * len(cursor.description)
     elif len(results) == 1:
         row = results[0]
     else:
-        raise RuntimeError('Multiple row result in sql_1row')
+        raise RuntimeError("Multiple row result in sql_1row")
 
     cursor.close()
     # This is moderately ugly semantic decision here.  If you don't like it,
     # don't use this function :).
     return row[0] if len(row) == 1 else row
+
 
 def sql_1object(conn, select, params=None):
     """
@@ -61,9 +64,10 @@ def sql_1object(conn, select, params=None):
         elif len(results) == 1:
             row = results[0]
         else:
-            raise RuntimeError('Multiple row result in sql_1row')
+            raise RuntimeError("Multiple row result in sql_1row")
 
     return row
+
 
 def sql_void(conn, sql, params=None):
     """
@@ -76,6 +80,7 @@ def sql_void(conn, sql, params=None):
         params = []
     with conn.cursor() as cursor:
         cursor.execute(sql, params)
+
 
 def sql_tab2(conn, stmt, mogrify_params=None, column_map=None):
     """
@@ -99,6 +104,7 @@ def sql_tab2(conn, stmt, mogrify_params=None, column_map=None):
     cursor.close()
     return columns, rows
 
+
 def _sql_tab2_cursor(cursor, column_map=None):
     """
     This function returns the rows from the (presumably psycopg2) cursor in the
@@ -115,22 +121,23 @@ def _sql_tab2_cursor(cursor, column_map=None):
     for pgcol in cursor.description:
         rt = column_map.get(pgcol[0], {})
         pgtype = pgcol.type_code
-        if 'type' not in rt:
+        if "type" not in rt:
             if pgtype in psyext.DATE.values:
-                rt['type'] = 'date'
-            elif pgtype in psyext.TIME.values+psyext.PYDATETIME.values:
+                rt["type"] = "date"
+            elif pgtype in psyext.TIME.values + psyext.PYDATETIME.values:
                 # Uncertain if this also contains a time-only value
-                rt['type'] = 'datetime'
-            elif pgtype in psyext.INTEGER.values+psyext.LONGINTEGER.values:
-                rt['type'] = 'integer'
-            elif pgtype in psyext.FLOAT.values+psyext.DECIMAL.values:
-                rt['type'] = 'numeric'
+                rt["type"] = "datetime"
+            elif pgtype in psyext.INTEGER.values + psyext.LONGINTEGER.values:
+                rt["type"] = "integer"
+            elif pgtype in psyext.FLOAT.values + psyext.DECIMAL.values:
+                rt["type"] = "numeric"
             elif pgtype in psyext.BOOLEAN.values:
-                rt['type'] = 'boolean'
+                rt["type"] = "boolean"
         if pgtype in psyext.UNICODE.values and pgcol.internal_size > 0:
-            rt['max_length'] = pgcol.internal_size
+            rt["max_length"] = pgcol.internal_size
         columns.append((pgcol[0], rt))
     return (columns, rows)
+
 
 def sanitize_fragment(text):
     """
@@ -139,7 +146,8 @@ def sanitize_fragment(text):
     >>> sanitize_fragment('a%a')
     '%a%%a%'
     """
-    return '%{}%'.format(text.replace('%', '%%'))
+    return "%{}%".format(text.replace("%", "%%"))
+
 
 def sanitize_prefix(text):
     """
@@ -148,13 +156,15 @@ def sanitize_prefix(text):
     >>> sanitize_prefix('a%a')
     'a%%a%'
     """
-    return '{}%'.format(text.replace('%', '%%'))
+    return "{}%".format(text.replace("%", "%%"))
+
 
 # See http://blog.lostpropertyhq.com/postgres-full-text-search-is-good-enough/
 
-SENTENCE_PUNCTUATION_RE = re.compile('[.,?!]*$')
-ALPHABETIC_RE = re.compile('^[a-zA-Z]*$')
-NON_WORDY_RE = re.compile('^[^a-zA-Z0-9]*$')
+SENTENCE_PUNCTUATION_RE = re.compile("[.,?!]*$")
+ALPHABETIC_RE = re.compile("^[a-zA-Z]*$")
+NON_WORDY_RE = re.compile("^[^a-zA-Z0-9]*$")
+
 
 def sanitize_fts(text):
     """
@@ -174,14 +184,17 @@ def sanitize_fts(text):
     >>> sanitize_fts('ON THE ROAD AGAIN!!')
     'ON&THE&ROAD&AGAIN'
     """
-    words = text.split(' ')
+    words = text.split(" ")
     # strip trailing punctuation
-    words = [SENTENCE_PUNCTUATION_RE.sub('', w) for w in words]
+    words = [SENTENCE_PUNCTUATION_RE.sub("", w) for w in words]
     # omit empty symbols
-    words = [w for w in words if w != '']
+    words = [w for w in words if w != ""]
     # omit pure punctuation symbols
     words = [w for w in words if not NON_WORDY_RE.match(w)]
     # quote non-alphabetic
-    words = [(w if ALPHABETIC_RE.match(w) else "'{}'".format(w.replace("'", "''"))) for w in words]
+    words = [
+        (w if ALPHABETIC_RE.match(w) else "'{}'".format(w.replace("'", "''")))
+        for w in words
+    ]
     # join
-    return '&'.join(words)
+    return "&".join(words)
