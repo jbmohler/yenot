@@ -274,7 +274,7 @@ delete from {fqtn} where ({pknames}) in (select * from staging)""".format(
             # around.  Hence we recommend "set constraints all deferred".
             if len(table.deleted_keys) > 0:
                 mogrifications = mogrify_values_anon(
-                    cursor, table.deleted_keys, pkey, {}
+                    cursor, table.deleted_keys, pkey, self.column_types
                 )
                 my_delete = delete.replace("/*REPRESENTED*/", mogrifications)
                 cursor.execute(my_delete, {"keys": tuple(table.deleted_keys)})
