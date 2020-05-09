@@ -162,9 +162,12 @@ def init_application(dburl):
     import yenot.server  # noqa: F401
 
     port = 8080
+    host = "127.0.0.1"
     if "YENOT_PORT" in os.environ:
         port = int(os.environ["YENOT_PORT"])
-    app._paste_server = PasteServer(host="127.0.0.1", port=port)
+    if "YENOT_HOST" in os.environ:
+        host = os.environ["YENOT_HOST"]
+    app._paste_server = PasteServer(host=host, port=port)
 
     return app
 
