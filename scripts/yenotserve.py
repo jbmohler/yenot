@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import argparse
 import importlib
 import yenot.backend
@@ -32,5 +33,13 @@ if __name__ == "__main__":
     for func in api.app_init_functions:
         func(app)
 
+    debug = os.environ.get("YENOT_DEBUG", None)
+    if debug == "reload":
+        kwargs = {"debug": True, "reloader": True}
+    elif debug == "debug":
+        kwargs = {"debug": True, "reloader": False}
+    else:
+        kwargs = {}
+
     # debugging & development service
-    app.run(debug=True, reloader=False, server=app._paste_server)
+    app.run(server=app._paste_server, **kwargs)

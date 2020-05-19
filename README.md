@@ -1,3 +1,5 @@
+# Introduction
+
 The yenot library defines a server framework and JSON data format to talk to a
 client library.  It is generally expected that the client & server are both
 written in Python.
@@ -18,3 +20,11 @@ aims to provide:
 
 This code originated in a Witmer Public Safety Group internal ERP project but
 here is re-incarnated and extended with lessons learned.
+
+# Server Configuration
+
+The following environment variables will configure the server.
+
+* YENOT_HOST -- ip address to all listen on
+* YENOT_PORT -- port
+* YENOT_DEBUG -- reload, debug or empty
