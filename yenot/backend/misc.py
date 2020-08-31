@@ -3,6 +3,7 @@ import collections
 import rtlib
 from bottle import request
 import psycopg2.extras as extras
+from . import sqlwrite
 
 
 class UserError(Exception):
@@ -182,3 +183,23 @@ class InboundTable:
         self.deleted_keys = keys.get("deleted", [])
 
         return self
+
+    def as_cte(self, conn, cte, columns=None, column_types=None):
+        if not columns:
+            columns = self.DataRow.__slots__
+
+        result_template = """\
+/*NAME*/(/*COLUMNS*/) as (
+    values/*REPRESENTED*/
+)"""
+
+        with conn.cursor() as cursor:
+            mogrifications = sqlwrite.mogrify_values(
+                cursor, self.rows, columns, column_types
+            )
+
+        return (
+            result_template.replace("/*REPRESENTED*/", mogrifications)
+            .replace("/*COLUMNS*/", ", ".join(columns))
+            .replace("/*NAME*/", cte)
+        )

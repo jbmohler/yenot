@@ -161,23 +161,6 @@ class TableSaveMogrification:
         self.primary_key = None
         self.column_types = None
 
-    def as_cte(self, conn, cte, table, columns):
-        result_template = """\
-/*NAME*/(/*COLUMNS*/) as (
-    values/*REPRESENTED*/
-)"""
-
-        with conn.cursor() as cursor:
-            mogrifications = mogrify_values(
-                cursor, table.rows, columns, self.column_types
-            )
-
-        return (
-            result_template.replace("/*REPRESENTED*/", mogrifications)
-            .replace("/*COLUMNS*/", ", ".join(columns))
-            .replace("/*NAME*/", cte)
-        )
-
     def as_values(self, conn, table, columns):
         result_template = """\
 values/*REPRESENTED*/
