@@ -219,6 +219,30 @@ def test_sitevar_reads(dburl):
         assert content.keys["value-get"] == "g1v1"
 
 
+def test_changequeue(dburl):
+    with yenot.tests.server_running(dburl) as server:
+        session = yclient.YenotSession(server.url)
+        client = session.std_client()
+
+        with futures.ThreadPoolExecutor(max_workers=2) as executor:
+            q1 = client.future(executor).get(
+                "api/sql/changequeue", key="view-01", channel="test01"
+            )
+            q2 = client.future(executor).get(
+                "api/sql/changequeue", key="view-02", channel="test02"
+            )
+
+            time.sleep(8)
+
+            client.post("api/test/changequeue", channel="test01")
+
+        content1 = q1.result()
+        content2 = q2.result()
+
+        assert len(content1.main_table().rows) == 1
+        assert len(content2.main_table().rows) == 0
+
+
 if __name__ == "__main__":
     dburl = os.environ["YENOT_DB_URL"]
     init_database(dburl)
@@ -226,3 +250,4 @@ if __name__ == "__main__":
     test_item_crud(dburl)
     test_read_write(dburl)
     test_sitevar_reads(dburl)
+    test_changequeue(dburl)

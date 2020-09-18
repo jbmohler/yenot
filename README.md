@@ -28,3 +28,19 @@ The following environment variables will configure the server.
 * YENOT_HOST -- ip address to all listen on
 * YENOT_PORT -- port
 * YENOT_DEBUG -- reload, debug or empty
+
+# Test Suite
+
+From a bare linux system it is easiest to run the test suite against a docker
+installed postgres.  This very short pointer does not include docker
+installation.  Note that after the closing `docker stop` command the postgres
+testing instance is completely gone.  Specific db hosting methods are beyond
+the scope of this README.
+
+```
+docker run --rm --name yenot-test-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
+sleep 6
+docker exec yenot-test-postgres createdb -U postgres -h localhost my_coverage_test
+YENOT_DB_URL=postgresql://postgres:mysecretpassword@localhost/my_coverage_test sh full-coverage.sh
+docker stop yenot-test-postgres
+```
