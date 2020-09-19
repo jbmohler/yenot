@@ -50,7 +50,7 @@ class Listener:
 
             curs = conn.cursor()
             # The channel string shall not be quoted in this context.
-            curs.execute("LISTEN {};".format(self.channel))
+            curs.execute(f"LISTEN {self.channel};")
 
             while time.time() - self.last_check < 30:
                 if select.select([conn], [], [], 5) == ([], [], []):

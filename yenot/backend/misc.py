@@ -131,7 +131,7 @@ def table_from_tab2(
     except RuntimeError as e:
         raise UserError(
             "invalid-collection",
-            'Post file "{}" contains incorrect data.  {}'.format(name, str(e)),
+            f'Post file "{name}" contains incorrect data.  {str(e)}',
         )
 
 
@@ -163,9 +163,7 @@ class InboundTable:
 
         if not allow_extra and not set(fields).issubset(allowed):
             raise RuntimeError(
-                "Extra fields given:  {}".format(
-                    " ".join(set(fields).difference(allowed))
-                )
+                f"Extra fields given:  {' '.join(set(fields).difference(allowed))}"
             )
         if not set(required).issubset(fields):
             raise RuntimeError(

@@ -71,13 +71,13 @@ def test_and_create_db(dburl):
         dbnames = [row.datname for row in c.fetchall()]
         if dbname in dbnames:
             raise InitError(
-                "database {} already exists (consider --full-recreate)".format(dbname)
+                f"database {dbname} already exists (consider --full-recreate)"
             )
 
     with conn_admin.cursor() as c:
         c.execute("select version()")
         x = [row.version for row in c.fetchall()]
-        print("PostgreSQL version:  {}".format(x[0]))
+        print(f"PostgreSQL version:  {x[0]}")
 
     with conn_admin.cursor() as c:
         c.execute(
@@ -98,14 +98,14 @@ def create_schema(conn, ddlfiles):
         fname = ddl
         if fname.startswith("#yenotroot#"):
             fname = fname.replace("#yenotroot#", root)
-        print("Load SQL script {}".format(fname))
+        print(f"Load SQL script {fname}")
         try:
             with conn.cursor() as c, open(fname, "r") as sqlfile:
                 sql = sqlfile.read()
                 c.execute(sql)
                 conn.commit()
         except Exception as e:
-            raise InitError("Error loading {} -- {}".format(ddl, str(e)))
+            raise InitError(f"Error loading {ddl} -- {str(e)}")
 
 
 if __name__ == "__main__":

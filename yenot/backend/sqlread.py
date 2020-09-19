@@ -146,7 +146,7 @@ def sanitize_fragment(text):
     >>> sanitize_fragment('a%a')
     '%a%%a%'
     """
-    return "%{}%".format(text.replace("%", "%%"))
+    return f"%{text.replace('%', '%%')}%"
 
 
 def sanitize_prefix(text):
@@ -156,7 +156,7 @@ def sanitize_prefix(text):
     >>> sanitize_prefix('a%a')
     'a%%a%'
     """
-    return "{}%".format(text.replace("%", "%%"))
+    return f"{text.replace('%', '%%')}%"
 
 
 # See http://blog.lostpropertyhq.com/postgres-full-text-search-is-good-enough/

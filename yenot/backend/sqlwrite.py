@@ -38,11 +38,11 @@ class WriteChunk:
 
         if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", sx):
             raise RuntimeError(
-                'invalid schema name "{}" (as determined by regex only)'.format(sx)
+                f'invalid schema name "{sx}" (as determined by regex only)'
             )
         if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", tx):
             raise RuntimeError(
-                'invalid table name "{}" (as determined by regex only)'.format(tx)
+                f'invalid table name "{tx}" (as determined by regex only)'
             )
 
         return sx, tx
@@ -129,10 +129,10 @@ def _mogrify_values(cursor, rows, row2dict, columns, types):
     assert len(types) == len(columns)
 
     qualnames = [
-        "%({})s::{}".format(cname, t) if t != None else "%({})s".format(cname)
+        f"%({cname})s::{t}" if t != None else f"%({cname})s"
         for cname, t in zip(columns, types)
     ]
-    fragment = "({})".format(", ".join(qualnames))
+    fragment = f"({', '.join(qualnames)})"
     mogrifications = [cursor.mogrify(fragment, row2dict(r)) for r in rows]
 
     return ",\n\t".join([x.decode(cursor.connection.encoding) for x in mogrifications])

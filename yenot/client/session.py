@@ -36,7 +36,7 @@ class YenotSession(requests.Session):
 
 def exception_string(response, method):
     if response.status_code == 401:
-        return "The request to {} is not authorized.".format(response.url)
+        return f"The request to {response.url} is not authorized."
     return """\
 Server request failed with status code:  {0.status_code}
 URL:  {0.url}

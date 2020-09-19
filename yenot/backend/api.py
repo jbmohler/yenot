@@ -112,7 +112,7 @@ class Results:
 
     def finalize(self):
         if "summary" not in self.keys and self._main_name != None:
-            self.keys["summary"] = "{:,} rows".format(len(self._t[self._main_name][1]))
+            self.keys["summary"] = f"{len(self._t[self._main_name][1]):,} rows"
 
     def plain_old_python(self):
         self.finalize()
@@ -180,7 +180,7 @@ class ColumnGenerator:
         if self.prefix == None:
             return ColumnGenerator(attr)
         else:
-            return ColumnGenerator(prefix="{}.{}".format(self.prefix, attr))
+            return ColumnGenerator(prefix=f"{self.prefix}.{attr}")
 
     def auto(self, **kwargs):
         """

@@ -113,7 +113,7 @@ def test_server_info(dburl):
             assert sleeps[0].named_table("sleep") != None
             assert sleeps[1].named_table("sleep") != None
         t2 = time.time()
-        assert 0.4 < t2 - t1 < 0.6, "timed out -- {}, {}".format(t2, t1)
+        assert 0.4 < t2 - t1 < 0.6, f"timed out -- {t2}, {t1}"
 
         client.get("api/sql/info")
 

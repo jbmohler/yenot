@@ -35,10 +35,10 @@ class SlottedRow:
 
     def __repr__(self):
         values = [
-            "{}={}".format(k, repr(getattr(self, k, unassigned)))
+            f"{k}={repr(getattr(self, k, unassigned))}"
             for k in self.__class__.__slots__
         ]
-        return "{}({})".format(self.__class__.__name__, ", ".join(values))
+        return f"{self.__class__.__name__}({', '.join(values)})"
 
 
 def fixedrecord(name, members, mixin=None):
@@ -243,7 +243,7 @@ def parse_datetime(v):
         return datetime.datetime.strptime(v, "%Y-%m-%dT%H:%M:%S.%f")
     except ValueError:
         pass
-    raise ValueError("could not parse {} as datetime".format(v))
+    raise ValueError(f"could not parse {v} as datetime")
 
 
 def parse_date(s):
@@ -258,7 +258,7 @@ def parse_date(s):
     if isinstance(s, datetime.date):
         return s
     if len(s) != 10 or s[4] != "-" or s[7] != "-":
-        raise ValueError("invalid date string {}".format(s))
+        raise ValueError(f"invalid date string {s}")
     return datetime.date(int(s[:4]), int(s[5:7]), int(s[8:10]))
 
 
@@ -269,7 +269,7 @@ def parse_bool(v):
         return True
     if v in [False, 0, "false", "no"]:
         return False
-    raise ValueError("unacceptable bool import:  {}".format(v))
+    raise ValueError(f"unacceptable bool import:  {v}")
 
 
 def as_python(columns, to_localtime=True):

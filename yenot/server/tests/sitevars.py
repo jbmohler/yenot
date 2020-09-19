@@ -10,7 +10,7 @@ def get_test_read_sitevar():
 
     if sitevar_key not in app.sitevars:
         raise api.UserError(
-            "invalid-key", "No site variable known by {}".format(sitevar_key)
+            "invalid-key", f"No site variable known by {sitevar_key}"
         )
 
     results = api.Results()

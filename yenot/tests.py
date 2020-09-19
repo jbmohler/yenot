@@ -23,8 +23,8 @@ def server_running(dburl, modules=None, sitevars=None):
         repo_root = os.environ["YENOT_REPO"]
     args = (
         [sys.executable, os.path.join(repo_root, "scripts/yenotserve.py")]
-        + ["--module={}".format(m) for m in modules]
-        + ["--sitevar={}".format(m) for m in sitevars]
+        + [f"--module={m}" for m in modules]
+        + [f"--sitevar={m}" for m in sitevars]
         + [dburl]
     )
     p = subprocess.Popen(args, stdin=sys.stdin, stdout=sys.stdout, stderr=sys.stderr)
@@ -32,11 +32,11 @@ def server_running(dburl, modules=None, sitevars=None):
     port = 8080
     if "YENOT_PORT" in os.environ:
         port = int(os.environ["YENOT_PORT"])
-    url = "http://127.0.0.1:{}".format(port)
+    url = f"http://127.0.0.1:{port}"
 
     while True:
         try:
-            r = requests.get("{}/api/ping".format(url))
+            r = requests.get(f"{url}/api/ping")
             if r.status_code == 200:
                 break
         except:
@@ -57,7 +57,7 @@ def server_running(dburl, modules=None, sitevars=None):
             yield RunningServer(url)
         finally:
             try:
-                requests.put("{}/api/server/shutdown".format(url))
+                requests.put(f"{url}/api/server/shutdown")
                 # p.terminate()
 
                 print("waiting on process to close")

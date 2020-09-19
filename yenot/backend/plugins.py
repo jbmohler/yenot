@@ -219,7 +219,7 @@ class ExceptionTrapper:
                 "session": request.headers.get("X-Yenot-SessionID", None),
                 "frames": list(reversed(fsumm)),
             }
-            des = "HTTP {} - {}".format(myresponse.status, keys.get("error-msg", None))
+            des = f"HTTP {myresponse.status} - {keys.get('error-msg', None)}"
             misc.write_event_entry(conn, "Yenot Server Error", des, details)
             conn.commit()
 
@@ -279,12 +279,12 @@ class ExceptionTrapper:
                     if sec == None:
                         errdesc = prim
                     else:
-                        errdesc = "{} ({})".format(prim, sec)
+                        errdesc = f"{prim} ({sec})"
                 except Exception:
                     errdesc = str(e)
                 keys = {
                     "error-key": "sql-syntax-error",
-                    "error-msg": "SQL Error:  {}".format(errdesc),
+                    "error-msg": f"SQL Error:  {errdesc}",
                 }
                 response.status = 500
                 response.content_type = "application/json; charset=UTF-8"
