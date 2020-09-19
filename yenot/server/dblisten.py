@@ -29,7 +29,8 @@ class Listener:
 
         self.last_check = time.time()
 
-        self.change_queue_core()
+        self.qthread = threading.Thread(target=self.change_queue_core)
+        self.qthread.start()
 
     @staticmethod
     def start_change_queue(key, channel):
@@ -44,7 +45,7 @@ class Listener:
 
     def change_queue_core(self):
         index = 0
-        with app.dbconn() as conn:
+        with app.background_dbconn() as conn:
             conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 
             curs = conn.cursor()
@@ -66,8 +67,8 @@ class Listener:
                         self.event.set()
 
                 cutoff = time.time() - 60
-                for cut, thing in enumerate(self.thislist):
-                    if thing[0] > cutoff:
+                for cut, chrow in enumerate(self.thislist):
+                    if chrow[0] > cutoff:
                         self.thislist = self.thislist[cut:]
                         break
 
@@ -78,35 +79,35 @@ class Listener:
         wait_length = 10
 
         for i in range(wait_count):
-            for thing in self.thislist:
-                if thing[1] > index:
+            self.last_check = time.time()
+
+            for chrow in self.thislist:
+                if chrow[1] > index:
                     with changes.adding_row() as r2:
-                        r2.index = thing[1]
-                        r2.payload = thing[2]
-                    index = thing[1]
+                        r2.index = chrow[1]
+                        r2.payload = chrow[2]
+                    index = chrow[1]
 
-            if i < wait_count - 1 and len(changes.rows) == 0:
+            if len(changes.rows) > 0:
+                break
+
+            if i < wait_count - 1:
                 self.event.wait(wait_length)
+                self.event.clear()
 
-        self.last_check = time.time()
         return changes
 
 
 @app.get("/api/sql/changequeue", name="api_sql_changequeue")
 def api_sql_changequeue():
-    try:
-        key = request.query.get("key")
-        channel = request.query.get("channel")
-        index = request.query.get("index", None)
+    key = request.query.get("key")
+    channel = request.query.get("channel")
+    index = request.query.get("index", None)
 
-        index = 0 if index is None else int(index)
-        listener = Listener.start_change_queue(key, channel)
+    index = 0 if index is None else int(index)
+    listener = Listener.start_change_queue(key, channel)
 
-        # return anything since
-        results = api.Results()
-        results.tables["changes", True] = listener.changes_since(index).as_tab2()
-    except Exception as e:
-        import traceback
-
-        print(traceback.print_exc())
+    # return anything since
+    results = api.Results()
+    results.tables["changes", True] = listener.changes_since(index).as_tab2()
     return results.json_out()

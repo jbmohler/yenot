@@ -32,6 +32,16 @@ def dbconn(self):
         self.pool.putconn(conn)
 
 
+# to become a method of app
+@contextlib.contextmanager
+def background_dbconn(self):
+    conn = self.pool.getconn()
+    try:
+        yield conn
+    finally:
+        self.pool.putconn(conn)
+
+
 def register_connection(self, ctoken, conn):
     if ctoken in self.dbconn_register:
         self.dbconn_register[ctoken].append(conn)
@@ -140,6 +150,7 @@ def init_application(dburl):
     global global_app
 
     DerivedBottle.dbconn = dbconn
+    DerivedBottle.background_dbconn = background_dbconn
     DerivedBottle.register_connection = register_connection
     DerivedBottle.unregister_connection = unregister_connection
     DerivedBottle.cancel_request = cancel_request
