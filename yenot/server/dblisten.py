@@ -36,11 +36,11 @@ class Listener:
     def start_change_queue(key, channel):
         global LISTENERS
 
-        if key in LISTENERS:
-            return LISTENERS[key]
+        if channel in LISTENERS:
+            return LISTENERS[channel]
         else:
             new = Listener(key, channel)
-            LISTENERS[key] = new
+            LISTENERS[channel] = new
             return new
 
     def change_queue_core(self):
@@ -65,12 +65,19 @@ class Listener:
                         node = (time.time(), index, notify.payload)
                         self.thislist.append(node)
                         self.event.set()
+                        self.event.clear()
 
                 cutoff = time.time() - 60
                 for cut, chrow in enumerate(self.thislist):
                     if chrow[0] > cutoff:
                         self.thislist = self.thislist[cut:]
                         break
+
+    def current_index(self):
+        if len(self.thislist) > 0:
+            return self.thislist[-1][1]
+        else:
+            return 0
 
     def changes_since(self, index):
         changes = rtlib.simple_table(["index", "payload"])
@@ -93,13 +100,25 @@ class Listener:
 
             if i < wait_count - 1:
                 self.event.wait(wait_length)
-                self.event.clear()
 
         return changes
 
 
-@app.get("/api/sql/changequeue", name="api_sql_changequeue")
-def api_sql_changequeue():
+@app.put("/api/sql/changequeue", name="put_api_sql_changequeue")
+def put_api_sql_changequeue():
+    key = request.query.get("key")
+    channel = request.query.get("channel")
+
+    listener = Listener.start_change_queue(key, channel)
+
+    # return anything since
+    results = api.Results()
+    results.keys["index"] = listener.current_index()
+    return results.json_out()
+
+
+@app.get("/api/sql/changequeue", name="get_api_sql_changequeue")
+def get_api_sql_changequeue():
     key = request.query.get("key")
     channel = request.query.get("channel")
     index = request.query.get("index", None)
