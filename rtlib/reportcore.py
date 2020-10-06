@@ -108,8 +108,9 @@ class Column:
         widget_kwargs=None,
         background_attr=None,
         foreground_attr=None,
-        sortkey=None,
-        sortnull=None,
+        sort_proxy=None,
+        sort_key=None,
+        sort_null=None,
         actions=None,
         add_actions=None,
     ):
@@ -134,12 +135,13 @@ class Column:
             formatter = lambda x: str(x) if x != None else ""
         self.formatter = formatter
         self.is_numeric = is_numeric
-        self.sortnull = sortnull
-        if sortkey == None:
-            nkey = "c" if self.sortnull == "last" else "a"
+        self.sort_proxy = sort_proxy
+        self.sort_null = sort_null
+        if sort_key == None:
+            nkey = "c" if self.sort_null == "last" else "a"
             # null items sort high
-            sortkey = lambda x: (nkey, "") if x == None else ("b", x)
-        self.sortkey = sortkey
+            sort_key = lambda x: (nkey, "") if x == None else ("b", x)
+        self.sort_key = sort_key
         if actions == None:
             # callable?, templated string, (global, represents)
             actions = [ColumnAction("View &{header}", "__url__", defaulted=True)]
