@@ -15,8 +15,7 @@ LISTENERS = {}
 
 
 class Listener:
-    def __init__(self, key, channel):
-        self.key = key
+    def __init__(self, channel):
         self.channel = channel
 
         if re.match("[a-zA-Z_][a-zA-Z0-9_]*", self.channel) is None:
@@ -34,14 +33,20 @@ class Listener:
 
     @staticmethod
     def start_change_queue(key, channel):
+        # TODO: remove key
         global LISTENERS
 
         if channel in LISTENERS:
             return LISTENERS[channel]
         else:
-            new = Listener(key, channel)
+            new = Listener(channel)
             LISTENERS[channel] = new
             return new
+
+    @staticmethod
+    def stop_change_queue(channel):
+        global LISTENERS
+        del LISTENERS[channel]
 
     def change_queue_core(self):
         index = 0
@@ -73,17 +78,19 @@ class Listener:
                         self.thislist = self.thislist[cut:]
                         break
 
+        self.stop_change_queue(self.channel)
+
     def current_index(self):
         if len(self.thislist) > 0:
             return self.thislist[-1][1]
         else:
             return 0
 
-    def changes_since(self, index):
+    def changes_since(self, cancel, index):
         changes = rtlib.simple_table(["index", "payload"])
 
-        wait_count = 4
-        wait_length = 10
+        wait_count = 10
+        wait_length = 4
 
         for i in range(wait_count):
             self.last_check = time.time()
@@ -100,6 +107,9 @@ class Listener:
 
             if i < wait_count - 1:
                 self.event.wait(wait_length)
+                if not self.event.is_set():
+                    # give a chance for the cancel exception
+                    cancel.wait(0.01)
 
         return changes
 
@@ -126,7 +136,10 @@ def get_api_sql_changequeue():
     index = 0 if index is None else int(index)
     listener = Listener.start_change_queue(key, channel)
 
-    # return anything since
     results = api.Results()
-    results.tables["changes", True] = listener.changes_since(index).as_tab2()
+    with app.cancel_queue() as cancel:
+        # return anything since
+        results.tables["changes", True] = listener.changes_since(
+            cancel, index
+        ).as_tab2()
     return results.json_out()

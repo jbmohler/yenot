@@ -7,6 +7,7 @@ import urllib.parse
 import traceback
 import time
 import threading
+import queue
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
@@ -16,6 +17,45 @@ from bottle import request, response
 from paste import httpserver
 from paste.translogger import TransLogger
 from . import misc
+
+
+class CancelQueue(queue.SimpleQueue):
+    def cancel(self):
+        self.put(("cancel", None))
+
+    def place_result(self, content):
+        self.put(("done", content))
+
+    def wait(self, timeout):
+        try:
+            x = self.get(timeout=timeout)
+        except queue.Empty:
+            # TODO: I'm not sure why one would use the wait function or what this exception means in this context
+            return
+
+        if x[0] == "cancel":
+            raise misc.UserError(
+                "cancel-request", "The request was canceled by the client."
+            )
+        elif x[0] == "done":
+            return x[1]
+        else:
+            raise RuntimeError("CancelQueue elements must be 2-tuples")
+
+
+# to become a method of app
+@contextlib.contextmanager
+def cancel_queue(self):
+    conn = CancelQueue()
+    ctoken = getattr(request, "cancel_token", None)
+    try:
+        if ctoken != None:
+            self.register_connection(ctoken, conn)
+        yield conn
+    finally:
+        if ctoken != None:
+            self.unregister_connection(ctoken, conn)
+
 
 # to become a method of app
 @contextlib.contextmanager
@@ -99,7 +139,7 @@ def create_pool(dburl):
         kwargs["password"] = result.password
     kwargs["cursor_factory"] = psycopg2.extras.NamedTupleCursor
 
-    return psycopg2.pool.ThreadedConnectionPool(4, 16, **kwargs)
+    return psycopg2.pool.ThreadedConnectionPool(3, 6, **kwargs)
 
 
 def delayed_shutdown(self):
@@ -151,6 +191,7 @@ def init_application(dburl):
 
     DerivedBottle.dbconn = dbconn
     DerivedBottle.background_dbconn = background_dbconn
+    DerivedBottle.cancel_queue = cancel_queue
     DerivedBottle.register_connection = register_connection
     DerivedBottle.unregister_connection = unregister_connection
     DerivedBottle.cancel_request = cancel_request
