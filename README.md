@@ -15,8 +15,8 @@ aims to provide:
 * plug in points for additional server end-points
 * Rich types through rtlib which know how to format themselves in a gui
 * Tabular data conveniences and efficent flexible Python editable tuple type
-* Client desktop application in PyQt which can auto-detect lots of things from
-  the server and expose a report list and searchable menu structure.
+
+See https://github.com/jbmohler/rtxqt for a Python client application.
 
 This code originated in a Witmer Public Safety Group internal ERP project but
 here is re-incarnated and extended with lessons learned.
