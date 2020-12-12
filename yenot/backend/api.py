@@ -1,4 +1,6 @@
-from bottle import response
+import datetime
+import pytz
+from bottle import request, response
 import rtlib
 from . import sqlread
 from . import sqlwrite
@@ -31,6 +33,17 @@ def get_global_app():
     from . import plugins
 
     return plugins.global_app
+
+
+def get_request_timezone():
+    client_tz = request.headers.get("X-Yenot-Timezone")
+    if client_tz:
+        return pytz.timezone(client_tz)
+    return None
+
+
+def get_request_today():
+    return datetime.datetime.now(get_request_timezone()).date()
 
 
 app_init_functions = []
