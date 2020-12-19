@@ -221,6 +221,7 @@ def init_application(dburl):
 
     app.sitevars = {}
 
+    app.install(InterpretReverseProxy())
     app.install(RequestCancelTracker())
     app.install(ExceptionTrapper())
 
@@ -248,6 +249,44 @@ class RequestCancelTracker:
     def apply(self, callback, route):
         def wrapper(*args, **kwargs):
             request.cancel_token = request.headers.get("X-Yenot-CancelToken", None)
+            return callback(*args, **kwargs)
+
+        return wrapper
+
+
+class InterpretReverseProxy:
+    """
+    This interpretation assumes that we are behind a reverse proxy and that it
+    is configured to set certain headers.  The appropriate nginx configuration
+    includes:
+
+        proxy_set_header    X-Real-IP $remote_addr;
+        proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header    X-Forwarded-Proto $scheme;
+        proxy_set_header    X-Original-URI $request_uri;
+    """
+
+    name = "revproxy"
+    api = 2
+
+    def setup(self, app):
+        pass
+
+    def apply(self, callback, route):
+        def wrapper(*args, **kwargs):
+            if "HTTP_X_FORWARDED_FOR" in request.environ:
+                ip_port = request.environ["HTTP_X_FORWARDED_FOR"]
+                if ":" in ip_port:
+                    ip, _ = ip_port.rsplit(":", 1)
+                else:
+                    ip = ip_port
+                request.environ["REMOTE_ADDR"] = ip
+            if "HTTP_X_ORIGINAL_URI" in request.environ:
+                orig_path_info = request.environ["HTTP_X_ORIGINAL_URI"].split("?")[0]
+                if orig_path_info.endswith(request.environ["PATH_INFO"]):
+                    request.environ["EXTERNAL_PREFIX"] = orig_path_info[
+                        : -len(request.environ["PATH_INFO"])
+                    ]
             return callback(*args, **kwargs)
 
         return wrapper
