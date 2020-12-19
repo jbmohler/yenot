@@ -6,6 +6,7 @@ import contextlib
 import urllib.parse
 import traceback
 import time
+import random
 import threading
 import queue
 import psycopg2
@@ -60,7 +61,20 @@ def cancel_queue(self):
 # to become a method of app
 @contextlib.contextmanager
 def dbconn(self):
-    conn = self.pool.getconn()
+    for index in range(15):
+        if index > 3:
+            print(
+                f"Attempt #{index} to get a connection from the connection pool",
+                flush=True,
+            )
+        try:
+            conn = self.pool.getconn()
+            break
+        except psycopg2.pool.PoolError as e:
+            if index < 14 and str(e) == "connection pool exhausted":
+                time.sleep(random.random() * 0.5 + 0.1)
+            else:
+                raise
     ctoken = getattr(request, "cancel_token", None)
     try:
         if ctoken != None:
