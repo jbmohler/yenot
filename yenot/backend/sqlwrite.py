@@ -73,6 +73,7 @@ class WriteChunk:
                     "integer",
                     "smallint",
                     "uuid",
+                    "bytea",
                 ):
                     # bit of a catch-all
                     coltypes[row.column_name] = row.data_type
