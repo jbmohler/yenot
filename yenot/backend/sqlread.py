@@ -1,3 +1,4 @@
+import os
 import re
 import psycopg2.extensions as psyext
 import psycopg2.extras as extras
@@ -136,6 +137,13 @@ def _sql_tab2_cursor(cursor, column_map=None):
         if pgtype in psyext.UNICODE.values and pgcol.internal_size > 0:
             rt["max_length"] = pgcol.internal_size
         columns.append((pgcol[0], rt))
+
+    if os.environ.get("YENOT_DEBUG"):
+        collist = [x[0] for x in columns]
+        for attr, meta in column_map.items():
+            if attr not in collist:
+                print(f"{attr} in column map; not found in column list", flush=True)
+
     return (columns, rows)
 
 

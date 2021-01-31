@@ -1,3 +1,4 @@
+import os
 import datetime
 import pytz
 from bottle import request, response
@@ -135,6 +136,15 @@ class Results:
         ), "table names & key names cannot overlap"
 
         tables = self._t.copy()
+
+        if os.environ.get("YENOT_DEBUG"):
+            for tname, tab2 in tables.items():
+                columns = tab2[0]
+                collist = [x[0] for x in columns]
+                for attr, meta in columns:
+                    if meta and meta.get("url_key") and meta.get('url_key') not in collist:
+                        print(f"{meta.get('url_key')} found in url_key of column {attr} in table {tname}", flush=True)
+
 
         keys = self.keys.copy()
         keys.update(tables)
