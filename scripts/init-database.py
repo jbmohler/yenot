@@ -160,4 +160,5 @@ if __name__ == "__main__":
         for func in api.app_init_functions:
             func(app)
         for func in api.data_init_functions:
+            print(f"running data init {func.__name__}")
             func(conn, args)
