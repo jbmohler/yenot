@@ -142,9 +142,12 @@ class Results:
                 columns = tab2[0]
                 collist = [x[0] for x in columns]
                 for attr, meta in columns:
-                    if meta and meta.get("url_key") and meta.get('url_key') not in collist:
-                        print(f"{meta.get('url_key')} found in url_key of column {attr} in table {tname}", flush=True)
-
+                    url_key = meta.get("url_key", None) if meta else None
+                    if url_key not in collist:
+                        print(
+                            f"unknown {url_key} found in url_key of column {attr} in table {tname}",
+                            flush=True,
+                        )
 
         keys = self.keys.copy()
         keys.update(tables)
