@@ -71,7 +71,7 @@ def test_and_create_db(dburl):
         dbnames = [row.datname for row in c.fetchall()]
         if dbname in dbnames:
             raise InitError(
-                f"database {dbname} already exists (consider --full-recreate)"
+                f"database {dbname} already exists (consider --db-reset)"
             )
 
     with conn_admin.cursor() as c:
@@ -115,10 +115,16 @@ if __name__ == "__main__":
         help="database identifier in url form (e.g. postgresql://user@host/dbname)",
     )
     parse.add_argument(
-        "--full-recreate",
+        "--db-reset",
         default=False,
         action="store_true",
-        help="drop and recreate the database",
+        help="drop (if necessary) and recreate the database",
+    )
+    parse.add_argument(
+        "--db-create",
+        default=False,
+        action="store_true",
+        help="create the database (error if existing)",
     )
     parse.add_argument(
         "--ddl-script",
@@ -140,9 +146,10 @@ if __name__ == "__main__":
 
     args = parse.parse_args()
 
-    if args.full_recreate:
+    if args.db_reset:
         drop_db(args.dburl)
-    test_and_create_db(args.dburl)
+    if args.db_reset or args.db_create:
+        test_and_create_db(args.dburl)
     with yenot.backend.create_connection(args.dburl) as conn:
         create_schema(conn, args.ddl_script)
 

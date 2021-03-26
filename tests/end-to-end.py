@@ -9,7 +9,7 @@ import yenot.tests
 
 def init_database(dburl):
     r = os.system(
-        "{} ./scripts/init-database.py {} --full-recreate --ddl-script=#yenotroot#/tests/item.sql --user=admin".format(
+        "{} ./scripts/init-database.py {} --db-reset --ddl-script=#yenotroot#/tests/item.sql --user=admin".format(
             sys.executable, dburl
         )
     )
