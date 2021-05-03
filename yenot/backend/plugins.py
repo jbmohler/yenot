@@ -216,6 +216,11 @@ def init_application(dburl):
     app = DerivedBottle()
     global_app = app
 
+    # request auth data to be replaced by any yenot
+    # authentication/authorization plugin
+    app.request_user_id = lambda: None
+    app.request_session_id = lambda: None
+
     app.pool = create_pool(dburl)
     app.dbconn_register = {}
 
@@ -310,7 +315,7 @@ class ExceptionTrapper:
             details = {
                 "exc_type": exc_type.__name__,
                 "exception": str(exc_value),
-                "session": request.headers.get("X-Yenot-SessionID", None),
+                "session": self.app.request_session_id(),
                 "frames": list(reversed(fsumm)),
             }
             des = f"HTTP {myresponse.status} - {keys.get('error-msg', None)}"
