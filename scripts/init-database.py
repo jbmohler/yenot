@@ -70,9 +70,7 @@ def test_and_create_db(dburl):
         c.execute("select datname from pg_database")
         dbnames = [row.datname for row in c.fetchall()]
         if dbname in dbnames:
-            raise InitError(
-                f"database {dbname} already exists (consider --db-reset)"
-            )
+            raise InitError(f"database {dbname} already exists (consider --db-reset)")
 
     with conn_admin.cursor() as c:
         c.execute("select version()")

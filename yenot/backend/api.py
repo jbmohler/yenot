@@ -143,7 +143,7 @@ class Results:
                 collist = [x[0] for x in columns]
                 for attr, meta in columns:
                     url_key = meta.get("url_key", None) if meta else None
-                    if url_key not in collist:
+                    if url_key and url_key not in collist:
                         print(
                             f"unknown {url_key} found in url_key of column {attr} in table {tname}",
                             flush=True,
