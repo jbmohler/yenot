@@ -286,12 +286,18 @@ class InterpretReverseProxy:
                 else:
                     ip = ip_port
                 request.environ["REMOTE_ADDR"] = ip
+
             if "HTTP_X_ORIGINAL_URI" in request.environ:
+                # It appears that EXTERNAL_PREFIX is unreliable, use YENOT_BASE_URL
                 orig_path_info = request.environ["HTTP_X_ORIGINAL_URI"].split("?")[0]
                 if orig_path_info.endswith(request.environ["PATH_INFO"]):
-                    request.environ["EXTERNAL_PREFIX"] = orig_path_info[
-                        : -len(request.environ["PATH_INFO"])
-                    ]
+                    pathroot = orig_path_info[: -len(request.environ["PATH_INFO"])]
+                    request.environ["EXTERNAL_PREFIX"] = pathroot
+
+            # set YENOT_BASE_URL based on bottle's url knowledge
+            tail_len = len(request.environ["bottle.raw_path"])
+            request.environ["YENOT_BASE_URL"] = request.url[:-tail_len] + "/"
+
             return callback(*args, **kwargs)
 
         return wrapper
