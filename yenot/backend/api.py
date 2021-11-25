@@ -15,6 +15,7 @@ sql_void = sqlread.sql_void
 writeblock = sqlwrite.writeblock
 UserError = misc.UserError
 table_from_tab2 = misc.table_from_tab2
+InboundTable = misc.InboundTable
 
 parse_date = rtlib.parse_date
 parse_bool = rtlib.parse_bool

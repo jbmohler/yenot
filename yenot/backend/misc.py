@@ -139,6 +139,9 @@ class InboundTable:
     def __init__(self, columns, rows):
         self.rows = rows[:]
         self.columns = columns
+        if columns:
+            attrs = [c for c, _ in columns]
+            self.DataRow = rtlib.fixedrecord("DataRow", attrs)
 
     @classmethod
     def from_file(
@@ -177,7 +180,6 @@ class InboundTable:
         dr = rtlib.fixedrecord("DataRow", clfields)
         rows = [dr(**dict(zip(fields, r))) for r in rows]
         self = cls([(c, None) for c in clfields], rows)
-        self.DataRow = dr
         self.deleted_keys = keys.get("deleted", [])
 
         return self
