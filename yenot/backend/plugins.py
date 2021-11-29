@@ -414,9 +414,8 @@ class ExceptionTrapper:
                 return json.dumps([keys])
             except bottle.HTTPError as error:
                 response.status = error.status
-                # TODO: we are going to call this json, but that almost surely
-                # is not always the case.
-                response.content_type = "application/json; charset=UTF-8"
+                if getattr(error, "is_json", False):
+                    response.content_type = "application/json; charset=UTF-8"
                 return error.body
             except Exception as e:
                 if bottle.DEBUG:

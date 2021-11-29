@@ -13,9 +13,12 @@ sql_1object = sqlread.sql_1object
 sql_rows = sqlread.sql_rows
 sql_void = sqlread.sql_void
 writeblock = sqlwrite.writeblock
-UserError = misc.UserError
 table_from_tab2 = misc.table_from_tab2
 InboundTable = misc.InboundTable
+
+UserError = misc.UserError
+UnauthorizedError = misc.UnauthorizedError
+ForbiddenError = misc.ForbiddenError
 
 parse_date = rtlib.parse_date
 parse_bool = rtlib.parse_bool

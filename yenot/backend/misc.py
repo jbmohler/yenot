@@ -1,9 +1,23 @@
 import json
 import collections
 import rtlib
-from bottle import request
+from bottle import request, HTTPError
 import psycopg2.extras as extras
 from . import sqlwrite
+
+
+class UnauthorizedError(HTTPError):
+    def __init__(self, key, msg):
+        body = json.dumps([{"error-key": key, "error-msg": msg}])
+        super(UnauthorizedError, self).__init__(403, body=body)
+        self.is_json = True
+
+
+class ForbiddenError(HTTPError):
+    def __init__(self, key, msg):
+        body = json.dumps([{"error-key": key, "error-msg": msg}])
+        super(ForbiddenError, self).__init__(403, body=body)
+        self.is_json = True
 
 
 class UserError(Exception):
