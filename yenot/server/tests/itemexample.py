@@ -1,5 +1,4 @@
 import math
-from bottle import request
 import rtlib
 import yenot.backend.api as api
 
@@ -116,7 +115,7 @@ def get_api_test_items_list():
 
 
 @app.post("/api/test/item-simple", name="post_api_test_item_simple")
-def post_api_test_item_simple():
+def post_api_test_item_simple(request):
     name = request.query.get("name")
     price = api.parse_float(request.query.get("price", None))
 

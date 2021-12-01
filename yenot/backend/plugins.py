@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import json
+import inspect
 import contextlib
 import urllib.parse
 import traceback
@@ -188,7 +189,8 @@ global_app = None
 
 
 class DerivedBottle(bottle.Bottle):
-    pass
+    def after_modules_finalize(self):
+        self.install(ArgumentShim())
 
 
 # See http://stackoverflow.com/questions/32404/
@@ -250,6 +252,27 @@ def init_application(dburl):
     app._paste_server = PasteServer(host=host, port=port)
 
     return app
+
+
+class ArgumentShim:
+    name = "yenot-args"
+    api = 2
+
+    def setup(self, app):
+        self.app = app
+
+    def apply(self, callback, route):
+        argspecs = inspect.getfullargspec(callback)
+
+        include_request = "request" in argspecs.args
+
+        def wrapper(*args, **kwargs):
+            # put the request in kwargs
+            if include_request:
+                kwargs["request"] = request
+            return callback(*args, **kwargs)
+
+        return wrapper
 
 
 class RequestCancelTracker:

@@ -1,4 +1,3 @@
-from bottle import request
 import yenot.backend.api as api
 
 app = api.get_global_app()
@@ -11,7 +10,7 @@ def api_server_shutdown():
 
 
 @app.get("/api/request/sleep", name="api_request_sleep", skip=["yenot-auth"])
-def api_request_sleep():
+def api_request_sleep(request):
     duration = api.parse_float(request.query.get("duration"))
 
     select = """

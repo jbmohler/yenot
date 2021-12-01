@@ -1,11 +1,10 @@
-from bottle import request
 import yenot.backend.api as api
 
 app = api.get_global_app()
 
 
 @app.get("/api/test/read-sitevar", name="api_test_read_sitevar")
-def get_test_read_sitevar():
+def get_test_read_sitevar(request):
     sitevar_key = request.query.get("key")
 
     if sitevar_key not in app.sitevars:

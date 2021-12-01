@@ -1,4 +1,3 @@
-from bottle import request
 import yenot.backend.api as api
 
 app = api.get_global_app()
@@ -40,7 +39,7 @@ select current_date as today,
 
 
 @app.get("/api/test/parse-types", name="api_test_parse_types")
-def get_test_parse_types():
+def get_test_parse_types(request):
     myfloat = api.parse_float(request.query.get("myfloat"))
     mydate = api.parse_date(request.query.get("mydate"))
     mybool = api.parse_bool(request.query.get("mybool"))

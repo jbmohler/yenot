@@ -6,7 +6,6 @@ import psycopg2
 import psycopg2.extensions
 import yenot.backend.api as api
 import rtlib
-from bottle import request
 
 
 app = api.get_global_app()
@@ -115,7 +114,7 @@ class Listener:
 
 
 @app.put("/api/sql/changequeue", name="put_api_sql_changequeue")
-def put_api_sql_changequeue():
+def put_api_sql_changequeue(request):
     key = request.query.get("key")
     channel = request.query.get("channel")
 
@@ -128,7 +127,7 @@ def put_api_sql_changequeue():
 
 
 @app.get("/api/sql/changequeue", name="get_api_sql_changequeue")
-def get_api_sql_changequeue():
+def get_api_sql_changequeue(request):
     key = request.query.get("key")
     channel = request.query.get("channel")
     index = request.query.get("index", None)

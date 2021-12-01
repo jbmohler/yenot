@@ -1,11 +1,13 @@
 import os
 import datetime
 import pytz
-from bottle import request, response
+from bottle import request, response, static_file
 import rtlib
 from . import sqlread
 from . import sqlwrite
 from . import misc
+
+# expose api.static_file from import above
 
 sql_tab2 = sqlread.sql_tab2
 sql_1row = sqlread.sql_1row
@@ -78,6 +80,7 @@ class Results:
 
     def __init__(self, default_title=False):
         self.keys = {"headers": []}
+        self.cookies = []
         self._main_name = None
         self._t = {}
         if default_title:
@@ -158,6 +161,9 @@ class Results:
         keys["__main_table__"] = self._main_name
         return keys
 
+    def set_cookie(self, cookie, value, **kwargs):
+        self.cookies.append((cookie, value, kwargs.copy()))
+
     def json_out(self):
         """
         Set the bottle response header content type and flatten the values in
@@ -170,6 +176,8 @@ class Results:
             return results.json_out()
         """
         response.content_type = "application/json; charset=UTF-8"
+        for cookie, value, kwargs in self.cookies:
+            response.set_cookie(cookie, value, **kwargs)
         pyobj = self.plain_old_python()
         return rtlib.serialize(pyobj).encode("utf-8")
 

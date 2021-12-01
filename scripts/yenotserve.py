@@ -33,6 +33,8 @@ if __name__ == "__main__":
     for func in api.app_init_functions:
         func(app)
 
+    app.after_modules_finalize()
+
     debug = os.environ.get("YENOT_DEBUG", None)
     if debug == "reload":
         kwargs = {"debug": True, "reloader": True}
