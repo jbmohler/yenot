@@ -9,5 +9,12 @@ setup(
     author="Joel B. Mohler",
     author_email="joel@kiwistrawberry.us",
     url="https://bitbucket.org/jbmohler/yenot",
-    packages=["yenot", "yenot.client", "yenot.backend", "yenot.server", "rtlib"],
+    packages=[
+        "yenot",
+        "yenot.client",
+        "yenot.backend",
+        "yenot.server",
+        "yenot.server.contrib",
+        "rtlib",
+    ],
 )
