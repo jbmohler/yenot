@@ -310,24 +310,28 @@ class InterpretReverseProxy:
 
     def apply(self, callback, route):
         def wrapper(*args, **kwargs):
-            if "HTTP_X_FORWARDED_FOR" in request.environ:
-                ip_port = request.environ["HTTP_X_FORWARDED_FOR"]
+            env = request.environ
+
+            if "HTTP_X_FORWARDED_FOR" in env:
+                ip_port = env["HTTP_X_FORWARDED_FOR"]
                 if ":" in ip_port:
                     ip, _ = ip_port.rsplit(":", 1)
                 else:
                     ip = ip_port
-                request.environ["REMOTE_ADDR"] = ip
+                env["REMOTE_ADDR"] = ip
 
-            if "HTTP_X_ORIGINAL_URI" in request.environ:
+            if "HTTP_X_ORIGINAL_URI" in env:
                 # It appears that EXTERNAL_PREFIX is unreliable, use YENOT_BASE_URL
-                orig_path_info = request.environ["HTTP_X_ORIGINAL_URI"].split("?")[0]
-                if orig_path_info.endswith(request.environ["PATH_INFO"]):
-                    pathroot = orig_path_info[: -len(request.environ["PATH_INFO"])]
-                    request.environ["EXTERNAL_PREFIX"] = pathroot
+                orig_path_info = env["HTTP_X_ORIGINAL_URI"].split("?")[0]
+                if orig_path_info.endswith(env["PATH_INFO"]):
+                    pathroot = orig_path_info[: -len(env["PATH_INFO"])]
+                    env["EXTERNAL_PREFIX"] = pathroot
 
             # set YENOT_BASE_URL based on bottle's url knowledge
-            tail_len = len(request.environ["bottle.raw_path"])
-            request.environ["YENOT_BASE_URL"] = request.url[:-tail_len] + "/"
+            bits = [env["PATH_INFO"], env["QUERY_STRING"]]
+            path_qi = '&'.join([b for b in bits if b])
+            tail_len = len(path_qi)
+            env["YENOT_BASE_URL"] = request.url[:-tail_len] + "/"
 
             return callback(*args, **kwargs)
 
