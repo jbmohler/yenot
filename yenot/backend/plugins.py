@@ -329,7 +329,7 @@ class InterpretReverseProxy:
 
             # set YENOT_BASE_URL based on bottle's url knowledge
             bits = [env["PATH_INFO"], env["QUERY_STRING"]]
-            path_qi = '&'.join([b for b in bits if b])
+            path_qi = "&".join([b for b in bits if b])
             tail_len = len(path_qi)
             env["YENOT_BASE_URL"] = request.url[:-tail_len] + "/"
 

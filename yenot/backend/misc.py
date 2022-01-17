@@ -131,8 +131,25 @@ def tab2_rows_default(columns, indices, default):
 
 
 def table_from_tab2(
-    name, required=None, amendments=None, options=None, allow_extra=False
+    name,
+    default_missing=False,
+    required=None,
+    amendments=None,
+    options=None,
+    allow_extra=False,
 ):
+    if name not in request.files:
+        if default_missing == "none":
+            return None
+        elif default_missing in [True, "empty"]:
+            return InboundTable.empty_table(
+                required=required, amendments=amendments, options=options
+            )
+        else:
+            raise UserError(
+                "required-collection",
+                f"Required tabular input {name} missing.",
+            )
     try:
         return InboundTable.from_file(
             request.files[name].file,
@@ -195,6 +212,19 @@ class InboundTable:
         rows = [dr(**dict(zip(fields, r))) for r in rows]
         self = cls([(c, None) for c in clfields], rows)
         self.deleted_keys = keys.get("deleted", [])
+
+        return self
+
+    @classmethod
+    def empty_table(cls, required, amendments, options):
+        if not required:
+            required = []
+        if not amendments:
+            amendments = []
+        clfields = required + amendments
+
+        self = cls([(c, None) for c in clfields], [])
+        self.deleted_keys = []
 
         return self
 

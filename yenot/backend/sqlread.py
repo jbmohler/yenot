@@ -134,6 +134,8 @@ def _sql_tab2_cursor(cursor, column_map=None):
                 rt["type"] = "numeric"
             elif pgtype in psyext.BOOLEAN.values:
                 rt["type"] = "boolean"
+            elif pgtype in (17,):  # psyext.BINARY.values:
+                rt["type"] = "binary"
         if pgtype in psyext.UNICODE.values and pgcol.internal_size > 0:
             rt["max_length"] = pgcol.internal_size
         columns.append((pgcol[0], rt))
