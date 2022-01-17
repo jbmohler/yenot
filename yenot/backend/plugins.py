@@ -155,14 +155,18 @@ def create_pool(dburl):
     kwargs["cursor_factory"] = psycopg2.extras.NamedTupleCursor
 
     # retry on connection refused
+    retries = 0
     while True:
         try:
+            print(f"Connecting to db {kwargs['dbname']} (retry {retries})")
             return psycopg2.pool.ThreadedConnectionPool(3, 6, **kwargs)
         except psycopg2.OperationalError as e:
-            if str(e).find("Connection refused") < 0:
-                break
-            else:
-                time.sleep(1)
+            print(str(e))
+            # if str(e).find("Connection refused") < 0:
+            #    break
+            # else:
+            retries += 1
+            time.sleep(1)
 
 
 def delayed_shutdown(self):
