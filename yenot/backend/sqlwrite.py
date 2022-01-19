@@ -47,6 +47,10 @@ class WriteChunk:
 
         return sx, tx
 
+    def update_rows(self, tname, table):
+        # TODO: write this assuring only updates; however, for now just user upsert_rows
+        self.upsert_rows(tname, table)
+
     def upsert_rows(self, tname, table):
         sx, tx = WriteChunk._split_table_name(tname)
 
