@@ -138,6 +138,7 @@ def table_from_tab2(
     amendments=None,
     options=None,
     allow_extra=False,
+    matrix=None,
 ):
     if name not in request.files:
         if default_missing == "none":
@@ -158,6 +159,7 @@ def table_from_tab2(
             required=required,
             amendments=amendments,
             options=options,
+            matrix=matrix,
             allow_extra=allow_extra,
         )
     except RuntimeError as e:
@@ -183,6 +185,7 @@ class InboundTable:
         required=None,
         amendments=None,
         options=None,
+        matrix=None,
         allow_extra=False,
     ):
         payload = json.loads(file.read().decode(encoding))
@@ -213,6 +216,29 @@ class InboundTable:
         rows = [dr(**dict(zip(fields, r))) for r in rows]
         self = cls([(c, None) for c in clfields], rows)
         self.deleted_keys = keys.get("deleted", [])
+        matrix = matrix or []
+        matrix = set(matrix).intersection(clfields)
+        self.matrices = {attr: {"scope": keys.get(f"{attr}:scope")} for attr in matrix}
+
+        # validate matrix inbound elements
+        for row in rows:
+            for attr in matrix:
+                v = getattr(row, attr)
+                if not isinstance(v, dict):
+                    raise RuntimeError(
+                        f"Matrix field {attr} expecting dict; received {str(type(v))}"
+                    )
+
+                # must be either add/remove (x)or set and no other keys
+                vkeys = list(v.keys())
+                if vkeys == ["set"]:
+                    pass
+                elif not set(vkeys).difference(["add", "remove"]):
+                    pass
+                else:
+                    raise RuntimeError(
+                        f"Matrix field {attr} expecting 'add'/'remove' or 'set'; received {vkeys}"
+                    )
 
         return self
 

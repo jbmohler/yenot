@@ -4,6 +4,38 @@ import yenot.backend.api as api
 
 app = api.get_global_app()
 
+### Aux tag CRUD ###
+
+
+@app.get("/api/test/item-tag/list", name="get_api_test_item_tag_list")
+def get_api_test_item_tag_list():
+    select = """
+select *
+from tag
+"""
+
+    results = api.Results()
+    with app.dbconn() as conn:
+        results.tables["tags", True] = api.sql_tab2(conn, select)
+    return results.json_out()
+
+
+@app.post("/api/test/item-tag", name="post_api_test_item_tag_record")
+def post_api_test_item_tag_record():
+    tag = api.table_from_tab2("tag", required=["name"])
+
+    if len(tag.rows) != 1:
+        raise api.UserError("invalid-params", "Update exactly one row.")
+
+    with app.dbconn() as conn:
+        with api.writeblock(conn) as w:
+            w.insert_rows("tag", tag)
+        conn.commit()
+    return api.Results().json_out()
+
+
+### Main Item CRUD ###
+
 
 @app.get("/api/test/item/new", name="get_api_test_item_new")
 def get_api_test_item_new():
@@ -27,8 +59,14 @@ where false"""
 @app.get("/api/test/item/<itemid>/record", name="get_api_test_item_record")
 def get_api_test_item_record(itemid):
     select = """
-select *
+select item.*,
+    tags.names as tags
 from item
+join lateral (
+    select array_agg(tag.name) as names
+    from tag
+    join tagitem on tagitem.item_id=item.id and tagitem.tag_id=tag.id
+    ) tags on true
 where id=%(item)s"""
 
     results = api.Results()
@@ -53,7 +91,13 @@ where id=%(item)s"""
 
 @app.post("/api/test/item", name="post_api_test_item_record")
 def post_api_test_item_record():
-    item = api.table_from_tab2("item", required=["name", "price"], allow_extra=True)
+    item = api.table_from_tab2(
+        "item",
+        required=["name", "price"],
+        options=["tags"],
+        matrix=["tags"],
+        allow_extra=True,
+    )
 
     if len(item.rows) != 1:
         raise api.UserError("invalid-params", "Update exactly one row.")
@@ -62,7 +106,7 @@ def post_api_test_item_record():
 
     with app.dbconn() as conn:
         with api.writeblock(conn) as w:
-            w.insert_rows("item", item)
+            w.insert_rows("item", item, matrix={"tags": "tagitem"})
         conn.commit()
     return api.Results().json_out()
 
@@ -70,7 +114,12 @@ def post_api_test_item_record():
 @app.put("/api/test/item/<itemid>", name="put_api_test_item_record")
 def put_api_test_item_record(itemid):
     item = api.table_from_tab2(
-        "item", required=["name", "price"], amendments=["id"], allow_extra=True
+        "item",
+        required=["name", "price"],
+        amendments=["id"],
+        options=["tags"],
+        matrix=["tags"],
+        allow_extra=True,
     )
 
     if len(item.rows) != 1:
@@ -81,7 +130,7 @@ def put_api_test_item_record(itemid):
 
     with app.dbconn() as conn:
         with api.writeblock(conn) as w:
-            w.upsert_rows("item", item)
+            w.upsert_rows("item", item, matrix={"tags": "tagitem"})
         conn.commit()
     return api.Results().json_out()
 
@@ -147,10 +196,12 @@ def put_api_test_update_item():
 
 @app.put("/api/test/update-items", name="put_api_test_update_items")
 def put_api_test_update_items():
-    item = api.table_from_tab2("item", required=["id", "name", "price"])
+    item = api.table_from_tab2(
+        "item", required=["id", "name", "price"], options=["tags"], matrix=["tags"]
+    )
 
     with app.dbconn() as conn:
         with api.writeblock(conn) as w:
-            w.upsert_rows("item", item)
+            w.upsert_rows("item", item, matrix={"tags": "tagitem"})
         conn.commit()
     return api.Results().json_out()

@@ -205,6 +205,63 @@ def test_read_write(dburl):
         )
 
 
+def test_read_write_matrix(dburl):
+    with yenot.tests.server_running(dburl) as server:
+        session = yclient.YenotSession(server.url)
+        client = session.std_client()
+
+        # do some reading and writing
+        itable = rtlib.simple_table(["name"])
+        with itable.adding_row() as row:
+            row.name = "New"
+        client.post("api/test/item-tag", files={"tag": itable.as_http_post_file()})
+        itable = rtlib.simple_table(["name"])
+        with itable.adding_row() as row:
+            row.name = "Used"
+        client.post("api/test/item-tag", files={"tag": itable.as_http_post_file()})
+
+        payload = client.get("api/test/item-tag/list")
+        tags = payload.main_table()
+
+        # do some reading and writing
+        itable = rtlib.simple_table(["name", "price", "tags"])
+        with itable.adding_row() as row:
+            row.name = "New Computer"
+            row.price = 30
+            row.tags = {"add": [t.id for t in tags.rows if t.name == "New"]}
+        client.post(
+            "api/test/item",
+            files={"item": itable.as_http_post_file()},
+        )
+
+        data = client.get("api/test/items/list")
+        items = data.main_table()
+
+        newcomp = [row for row in items.rows if row.name == "New Computer"]
+
+        payload = client.get("api/test/item/{}/record", newcomp[0].id)
+        item = payload.main_table()
+        assert item.rows[0].tags == ["New"], "Should have only tag New"
+
+        row = item.rows[0]
+        row.price = 32
+        row.tags = {
+            "add": [t.id for t in tags.rows if t.name == "Used"],
+            "remove": [t.id for t in tags.rows if t.name == "New"],
+        }
+        client.put(
+            "api/test/item/{}",
+            newcomp[0].id,
+            files={
+                "item": item.as_http_post_file(inclusions=["price", "name", "tags"])
+            },
+        )
+
+        payload = client.get("api/test/item/{}/record", newcomp[0].id)
+        item = payload.main_table()
+        assert item.rows[0].tags == ["Used"], "Should have only tag Used"
+
+
 def test_sitevar_reads(dburl):
     sitevars = [
         "[group1].[value1]=g1v1",
@@ -248,6 +305,7 @@ if __name__ == "__main__":
     init_database(dburl)
     test_server_info(dburl)
     test_item_crud(dburl)
+    test_read_write_matrix(dburl)
     test_read_write(dburl)
     test_sitevar_reads(dburl)
     test_changequeue(dburl)
