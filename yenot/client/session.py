@@ -46,7 +46,7 @@ Method:  {1}""".format(
 
 
 def raise_exception_ex(response, method):
-    if response.status_code == 403:
+    if response.status_code in (400, 403):
         t = response.text
         is_json = len(t) > 0 and t[0] == "[" and t[-1] == "]"
         if is_json:

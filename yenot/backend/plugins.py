@@ -384,7 +384,7 @@ class ExceptionTrapper:
                     keys = {"error-key": "duplicate-key", "error-msg": msg}
                 elif str(e).startswith("null value in column "):
                     match = re.match(
-                        r'null value in column "([a-zA-Z0-9_]*)" violates not-null constraint',
+                        r'null value in column "([a-zA-Z0-9_]*)"( of relation "([a-zA-Z0-9_.]*)"|) violates not-null constraint',
                         str(e).split("\n")[0],
                     )
                     msg = 'The value in field "{}" must be non-empty and valid.'.format(
@@ -439,11 +439,17 @@ class ExceptionTrapper:
                 response.status = 400
                 return json.dumps([keys])
             except misc.UserError as e:
+                print(f"UserError ({e.key}): {str(e)}", file=sys.stderr, flush=True)
                 keys = {"error-key": e.key, "error-msg": str(e)}
                 response.status = 400
                 response.content_type = "application/json; charset=UTF-8"
                 return json.dumps([keys])
             except bottle.HTTPError as error:
+                print(
+                    f"HTTPError ({error.status}): {str(error)}",
+                    file=sys.stderr,
+                    flush=True,
+                )
                 response.status = error.status
                 if getattr(error, "is_json", False):
                     response.content_type = "application/json; charset=UTF-8"

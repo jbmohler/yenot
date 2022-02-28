@@ -130,6 +130,7 @@ def tab2_rows_default(columns, indices, default):
 # rtlib server incoming utils
 
 
+# TODO:  This does not require a tab2 but a tab3
 def table_from_tab2(
     name,
     default_missing=False,
