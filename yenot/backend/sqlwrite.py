@@ -274,23 +274,25 @@ class WriteChunk:
                     for r in removes:
                         tadd.rows.append(tadd.DataRow(mykey, r))
 
-            mat_mog = TableSaveMogrification()
-            mat_mog.column_types = meta["column_types"]
-            values = mat_mog.as_values(self.conn, tadd, tadd.DataRow.__slots__)
-            c = ", ".join(tadd.DataRow.__slots__)
+            if len(tadd.rows) > 0:
+                mat_mog = TableSaveMogrification()
+                mat_mog.column_types = meta["column_types"]
+                values = mat_mog.as_values(self.conn, tadd, tadd.DataRow.__slots__)
+                c = ", ".join(tadd.DataRow.__slots__)
 
-            insert_sql = """insert into {t} ({columns}) {v}
+                insert_sql = """
+insert into {t} ({columns}) {v}
 on conflict ({cself}, {cother}) do nothing"""
-            with self.conn.cursor() as cursor:
-                cursor.execute(
-                    insert_sql.format(
-                        t=meta["table"],
-                        columns=c,
-                        v=values,
-                        cself=meta["column_self"],
-                        cother=meta["column_other"],
+                with self.conn.cursor() as cursor:
+                    cursor.execute(
+                        insert_sql.format(
+                            t=meta["table"],
+                            columns=c,
+                            v=values,
+                            cself=meta["column_self"],
+                            cother=meta["column_other"],
+                        )
                     )
-                )
 
     def delete_rows(self, tname, table):
         sx, tx = WriteChunk._split_table_name(tname)
