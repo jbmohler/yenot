@@ -5,6 +5,7 @@ from bottle import request, response, static_file
 import rtlib
 from . import sqlread
 from . import sqlwrite
+from . import sqllisten
 from . import misc
 
 # expose api.static_file from import above
@@ -34,6 +35,10 @@ tab2_rows_default = misc.tab2_rows_default
 sanitize_prefix = sqlread.sanitize_prefix
 sanitize_fts = sqlread.sanitize_fts
 sanitize_fragment = sqlread.sanitize_fragment
+
+start_listener = sqllisten.start_listener
+poll_listener = sqllisten.poll_listener
+notify_listener = sqllisten.notify_listener
 
 
 def get_global_app():
