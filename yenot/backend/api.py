@@ -161,9 +161,18 @@ class Results:
                             flush=True,
                         )
 
+        def dictify(columns, row):
+            # The ordered list of columns has dict keys
+            return {column[0]: value for column, value in zip(columns, row)}
+
         keys = self.keys.copy()
-        keys.update(tables)
-        keys["__main_table__"] = self._main_name
+        for tname, tab2 in tables.items():
+            keys[tname] = {
+                "columns": tab2[0],
+                "data": [dictify(tab2[0], row) for row in tab2[1]],
+            }
+        if self._main_name:
+            keys["__main_table__"] = self._main_name
         return keys
 
     def set_cookie(self, cookie, value, **kwargs):

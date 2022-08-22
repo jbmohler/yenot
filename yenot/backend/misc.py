@@ -188,8 +188,11 @@ class InboundTable:
         matrix=None,
         allow_extra=False,
     ):
-        payload = json.loads(file.read().decode(encoding))
-        keys, fields, rows = payload
+        intable = json.loads(file.read().decode(encoding))
+        keys = intable.copy()
+        fields = keys.pop("columns")
+        rows = keys.pop("data")
+
         clfields = list(fields)
         allowed = set(options) if options != None else set()
         if required == None:
@@ -213,7 +216,8 @@ class InboundTable:
             clfields += set(amendments).difference(fields)
 
         dr = rtlib.fixedrecord("DataRow", clfields)
-        rows = [dr(**dict(zip(fields, r))) for r in rows]
+        rows = [dr(**{attr: r[attr] for attr in fields}) for r in rows]
+        # rows = [dr(**dict(zip(fields, r))) for r in rows]
         self = cls([(c, None) for c in clfields], rows)
         self.deleted_keys = keys.get("deleted", [])
         matrix = matrix or []
