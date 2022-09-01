@@ -269,11 +269,16 @@ class ArgumentShim:
         argspecs = inspect.getfullargspec(callback)
 
         include_request = "request" in argspecs.args
+        include_response = "response" in argspecs.args
 
         def wrapper(*args, **kwargs):
-            # put the request in kwargs
+            # put the request and/or response in kwargs
+
             if include_request:
                 kwargs["request"] = request
+            if include_response:
+                kwargs["response"] = response
+
             return callback(*args, **kwargs)
 
         return wrapper
