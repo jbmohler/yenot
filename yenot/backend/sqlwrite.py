@@ -19,9 +19,37 @@ where tc.constraint_type='PRIMARY KEY'
 # tables.
 # TODO:  What if there are elements of the primary key which are not a foreign
 # key reference?  This query will not return them.
-# See $root/schema/yenot.sql for the definition.
+# See $root/schema/core.sql for the definition.
 SELECT_MATRIX_FKEYS = """
 select * from yenotsys.matrix_key_table(%(sname)s, %(tname)s);
+"""
+
+# See $root/schema/core.sql for the definition.
+SELECT_FKEY_DETAIL = """
+select * from yenotsys.foreign_key_detail(%(sname)s, %(tname)s);
+"""
+
+SELECT_CONSTRAINT_LIST = """
+SELECT
+    c.conname,
+    -- c = check constraint, f = foreign key constraint,
+    -- p = primary key constraint, u = unique constraint,
+    -- t = constraint trigger, x = exclusion constraint
+    c.contype,
+    nsp.nspname,
+    rel.relname,
+    pg_get_constraintdef(c.oid) as definition,
+    att.attributes
+from pg_constraint c
+inner join pg_namespace nsp on nsp.oid = c.connamespace
+inner join pg_catalog.pg_class rel on rel.oid = c.conrelid
+join lateral (
+        select array_agg(a.attname) as attributes
+        from unnest(c.conkey) ak(k)
+        inner join pg_attribute a on a.attrelid = c.conrelid and a.attnum = ak.k
+    ) att on true
+where nsp.nspname=%(sname)s and rel.relname=%(tname)s
+order by c.contype, c.conname;
 """
 
 SELECT_COLUMN_TYPE = """
@@ -170,6 +198,10 @@ class WriteChunk:
                 raise RuntimeError(
                     f"Expecting matrix table {meta['table']} to have 2 column composite primary key (each foreign key)"
                 )
+            matcols = sqlread.sql_rows(
+                self.conn, SELECT_COLUMN_TYPE, {"sname": sxm, "tname": txm}
+            )
+            matcolmap = {mcol.column_name: mcol for mcol in matcols}
 
             fkeys = sqlread.sql_rows(
                 self.conn, SELECT_MATRIX_FKEYS, {"sname": sxm, "tname": txm}
@@ -182,15 +214,21 @@ class WriteChunk:
             casts = {}
             for fkey in fkeys:
                 if fkey.foreign_table_schema == sx and fkey.foreign_table_name == tx:
+                    assert (
+                        len(fkey.ordered_keys) == 1
+                    ), f"Only simple 1 column matrix fkeys supported ({fkey.constraint_name} is not so)"
                     # find the one referencing this table
-                    meta["column_self"] = fkey.column_name
+                    meta["column_self"] = fkey.ordered_keys[0]
                 else:
+                    assert (
+                        len(fkey.ordered_keys) == 1
+                    ), f"Only simple 1 column matrix fkeys supported ({fkey.constraint_name} is not so)"
                     # find the one referencing the other table (with type info)
-                    meta["column_other"] = fkey.column_name
+                    meta["column_other"] = fkey.ordered_keys[0]
 
-                cccast = self._column_cast(fkey, prefix="foreign_")
+                cccast = self._column_cast(matcolmap[fkey.ordered_keys[0]])
                 if cccast:
-                    casts[fkey.column_name] = cccast
+                    casts[fkey.ordered_keys[0]] = cccast
             meta["column_types"] = casts
 
             if not meta.get("column_self") or not meta.get("column_other"):
