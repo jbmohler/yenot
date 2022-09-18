@@ -126,7 +126,7 @@ class WriteChunk:
                 # no casting necessary
                 pass
             elif data_type == "numeric":
-                result = "numeric({}, {})".format(numeric_precision, numeric_scale)
+                result = f"numeric({numeric_precision}, {numeric_scale})"
             elif data_type in (
                 "date",
                 "boolean",
@@ -378,9 +378,9 @@ values/*REPRESENTED*/
 
         cols_no_pk = [c for c in collist if c not in pkey]
 
-        colnames = ", ".join(['"{0}"'.format(c) for c in collist])
-        colnames_no_pk = ", ".join(['"{0}"'.format(c) for c in cols_no_pk])
-        staging_no_pk = ", ".join(['staging."{0}"'.format(c) for c in cols_no_pk])
+        colnames = ", ".join([f'"{c}"' for c in collist])
+        colnames_no_pk = ", ".join([f'"{c}"' for c in cols_no_pk])
+        staging_no_pk = ", ".join([f'staging."{c}"' for c in cols_no_pk])
         colassign = ", ".join(['"{0}"=staging."{0}"'.format(c) for c in cols_no_pk])
 
         interpolations = {
