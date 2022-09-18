@@ -52,6 +52,46 @@ class WriteChunk:
     def __init__(self, conn):
         self.conn = conn
 
+    @staticmethod
+    def _column_cast(schrow, prefix=None):
+        """
+        Extra a column sql type from the information_schema data_type and
+        related columns.
+
+        Returns null if not required to cast (e.g. python string).
+
+        This parses the rows returned by SELECT_COLUMN_TYPE.
+        """
+        prefix = prefix or ""
+        data_type = getattr(schrow, f"{prefix}data_type")
+        numeric_precision = getattr(schrow, f"{prefix}numeric_precision")
+        numeric_scale = getattr(schrow, f"{prefix}numeric_scale")
+
+        result = None
+
+        if data_type in ("character", "character varying", "text"):
+            # no casting necessary
+            pass
+        elif data_type == "numeric":
+            result = f"numeric({numeric_precision}, {numeric_scale})"
+        elif data_type in (
+            "date",
+            "boolean",
+            "json",
+            "jsonb",
+            "integer",
+            "smallint",
+            "uuid",
+            "bytea",
+        ):
+            # bit of a catch-all
+            result = data_type
+        else:
+            # untracked for now
+            pass
+
+        return result
+
     def update_rows(self, tname, table, matrix=None):
         # TODO: write this assuring only updates; however, for now just user upsert_rows
         self.upsert_rows(tname, table, matrix=matrix)
@@ -104,47 +144,11 @@ class WriteChunk:
                 # optional matrix column not included; remove from matrix dict
                 del matrix[k]
 
-        def column_cast(schrow, prefix=None):
-            """
-            Extra a column sql type from the information_schema data_type and
-            related columns.
-
-            Returns null if not required to cast (e.g. python string)
-            """
-            prefix = prefix or ""
-            data_type = getattr(schrow, f"{prefix}data_type")
-            numeric_precision = getattr(schrow, f"{prefix}numeric_precision")
-            numeric_scale = getattr(schrow, f"{prefix}numeric_scale")
-
-            result = None
-
-            if data_type in ("character", "character varying", "text"):
-                # no casting necessary
-                pass
-            elif data_type == "numeric":
-                result = f"numeric({numeric_precision}, {numeric_scale})"
-            elif data_type in (
-                "date",
-                "boolean",
-                "json",
-                "integer",
-                "smallint",
-                "uuid",
-                "bytea",
-            ):
-                # bit of a catch-all
-                result = data_type
-            else:
-                # untracked for now
-                pass
-
-            return result
-
         cols = sqlread.sql_rows(self.conn, COL_TYPE_SELECT, {"sname": sx, "tname": tx})
         coltypes = {}
         for row in cols:
             if row.column_name in tosave:
-                cast_type = column_cast(row)
+                cast_type = self._column_cast(row)
                 if cast_type:
                     coltypes[row.column_name] = cast_type
 
@@ -182,7 +186,7 @@ class WriteChunk:
                     # find the one referencing the other table (with type info)
                     meta["column_other"] = fkey.column_name
 
-                cccast = column_cast(fkey, prefix="foreign_")
+                cccast = self._column_cast(fkey, prefix="foreign_")
                 if cccast:
                     casts[fkey.column_name] = cccast
             meta["column_types"] = casts
