@@ -3,7 +3,7 @@ import contextlib
 from . import sqlread
 
 
-PRIM_KEY_SELECT = """
+SELECT_PRIMARY_KEYS = """
 select array_agg(kcu.column_name::text)
 from information_schema.table_constraints tc
 join information_schema.key_column_usage kcu on
@@ -20,11 +20,11 @@ where tc.constraint_type='PRIMARY KEY'
 # TODO:  What if there are elements of the primary key which are not a foreign
 # key reference?  This query will not return them.
 # See $root/schema/yenot.sql for the definition.
-MATRIX_KEY_SELECT = """
+SELECT_MATRIX_FKEYS = """
 select * from yenotsys.matrix_key_table(%(sname)s, %(tname)s);
 """
 
-COL_TYPE_SELECT = """
+SELECT_COLUMN_TYPE = """
 select tables.table_name, columns.column_name, columns.is_nullable,
 	columns.data_type, columns.character_maximum_length,
 	columns.numeric_precision, columns.numeric_precision_radix, columns.numeric_scale
@@ -144,7 +144,9 @@ class WriteChunk:
                 # optional matrix column not included; remove from matrix dict
                 del matrix[k]
 
-        cols = sqlread.sql_rows(self.conn, COL_TYPE_SELECT, {"sname": sx, "tname": tx})
+        cols = sqlread.sql_rows(
+            self.conn, SELECT_COLUMN_TYPE, {"sname": sx, "tname": tx}
+        )
         coltypes = {}
         for row in cols:
             if row.column_name in tosave:
@@ -153,7 +155,7 @@ class WriteChunk:
                     coltypes[row.column_name] = cast_type
 
         my_pkey = sqlread.sql_1row(
-            self.conn, PRIM_KEY_SELECT, {"sname": sx, "tname": tx}
+            self.conn, SELECT_PRIMARY_KEYS, {"sname": sx, "tname": tx}
         )
 
         # extract primary keys for this table and cross-check with primary keys
@@ -162,7 +164,7 @@ class WriteChunk:
             sxm, txm = split_table_name(meta["table"])
 
             primkeys = sqlread.sql_1row(
-                self.conn, PRIM_KEY_SELECT, {"sname": sxm, "tname": txm}
+                self.conn, SELECT_PRIMARY_KEYS, {"sname": sxm, "tname": txm}
             )
             if len(primkeys) != 2:
                 raise RuntimeError(
@@ -170,7 +172,7 @@ class WriteChunk:
                 )
 
             fkeys = sqlread.sql_rows(
-                self.conn, MATRIX_KEY_SELECT, {"sname": sxm, "tname": txm}
+                self.conn, SELECT_MATRIX_FKEYS, {"sname": sxm, "tname": txm}
             )
             if len(fkeys) != 2:
                 raise RuntimeError(
@@ -297,7 +299,9 @@ on conflict ({cself}, {cother}) do nothing"""
     def delete_rows(self, tname, table):
         sx, tx = split_table_name(tname)
 
-        keys = sqlread.sql_1row(self.conn, PRIM_KEY_SELECT, {"sname": sx, "tname": tx})
+        keys = sqlread.sql_1row(
+            self.conn, SELECT_PRIMARY_KEYS, {"sname": sx, "tname": tx}
+        )
         if list(sorted(keys)) != list(sorted(table.DataRow.__slots__)):
             raise RuntimeError("primary key must be exactly represented")
 
