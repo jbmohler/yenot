@@ -34,27 +34,23 @@ where tables.table_schema=%(sname)s and tables.table_name=%(tname)s and tables.t
 """
 
 
+def split_table_name(tname):
+    if tname.find(".") >= 0:
+        sx, tx = tname.split(".")
+    else:
+        sx, tx = "public", tname
+
+    if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", sx):
+        raise RuntimeError(f'invalid schema name "{sx}" (as determined by regex only)')
+    if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", tx):
+        raise RuntimeError(f'invalid table name "{tx}" (as determined by regex only)')
+
+    return sx, tx
+
+
 class WriteChunk:
     def __init__(self, conn):
         self.conn = conn
-
-    @staticmethod
-    def _split_table_name(tname):
-        if tname.find(".") >= 0:
-            sx, tx = tname.split(".")
-        else:
-            sx, tx = "public", tname
-
-        if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", sx):
-            raise RuntimeError(
-                f'invalid schema name "{sx}" (as determined by regex only)'
-            )
-        if None == re.match("[a-zA-Z_][a-z0-9A-Z_]*", tx):
-            raise RuntimeError(
-                f'invalid table name "{tx}" (as determined by regex only)'
-            )
-
-        return sx, tx
 
     def update_rows(self, tname, table, matrix=None):
         # TODO: write this assuring only updates; however, for now just user upsert_rows
@@ -69,7 +65,7 @@ class WriteChunk:
             self.upsert_rows(tname, table, matrix)
             return
 
-        sx, tx = WriteChunk._split_table_name(tname)
+        sx, tx = split_table_name(tname)
 
         insert_sql = """insert into {t} ({columns}) {v}"""
 
@@ -83,7 +79,7 @@ class WriteChunk:
     def upsert_rows(self, tname, table, matrix=None):
         # TODO -- Perhaps this should be named "upserdel" since it inserts,
         # updates & deletes rows.
-        sx, tx = WriteChunk._split_table_name(tname)
+        sx, tx = split_table_name(tname)
 
         from . import misc
 
@@ -159,7 +155,7 @@ class WriteChunk:
         # extract primary keys for this table and cross-check with primary keys
         # of matrix table(s)
         for kmatrix, meta in matrix.items():
-            sxm, txm = WriteChunk._split_table_name(meta["table"])
+            sxm, txm = split_table_name(meta["table"])
 
             primkeys = sqlread.sql_1row(
                 self.conn, PRIM_KEY_SELECT, {"sname": sxm, "tname": txm}
@@ -199,7 +195,7 @@ class WriteChunk:
         # run through deletes (first, to drop referencing)
         for kmatrix, meta in matrix.items():
             tmatmeta = table.matrices[kmatrix]
-            sxm, txm = WriteChunk._split_table_name(meta["table"])
+            sxm, txm = split_table_name(meta["table"])
 
             columns = [(meta["column_self"], None), (meta["column_other"], None)]
             tremove = misc.InboundTable(columns, [])
@@ -252,7 +248,7 @@ class WriteChunk:
         # run through adds (after, to enable references)
         for kmatrix, meta in matrix.items():
             tmatmeta = table.matrices[kmatrix]
-            sxm, txm = WriteChunk._split_table_name(meta["table"])
+            sxm, txm = split_table_name(meta["table"])
 
             columns = [(meta["column_self"], None), (meta["column_other"], None)]
             tadd = misc.InboundTable(columns, [])
@@ -295,7 +291,7 @@ on conflict ({cself}, {cother}) do nothing"""
                     )
 
     def delete_rows(self, tname, table):
-        sx, tx = WriteChunk._split_table_name(tname)
+        sx, tx = split_table_name(tname)
 
         keys = sqlread.sql_1row(self.conn, PRIM_KEY_SELECT, {"sname": sx, "tname": tx})
         if list(sorted(keys)) != list(sorted(table.DataRow.__slots__)):
